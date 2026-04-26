@@ -197,7 +197,7 @@ logging:
     out_path.write_text(config_text, encoding="utf-8")
 
 
-_VERSION = "1.2.0"
+_VERSION = "1.2.1"
 
 app = typer.Typer(
     name="ctxkit",
@@ -422,6 +422,7 @@ def index(
     config: Optional[str] = _cfg_option,
     verbose: bool = typer.Option(False, "--verbose", "-v"),
     inspect: Optional[str] = typer.Option(None, "--inspect", help="Show chunk breakdown for a file"),
+    force: bool = typer.Option(False, "--force", "-f", help="Wipe index and manifest, reindex everything from scratch"),
 ):
     """Scan vault, show diff, confirm, index delta."""
     cfg = _load(config)
@@ -431,6 +432,20 @@ def index(
     from ctxkit.core.indexer.document_loader import DocumentLoader
     from ctxkit.core.indexer.text_splitter import TextSplitter
     from ctxkit.core.indexer.index_writer import IndexWriter
+    from ctxkit.utils.logging import get_logger
+    from ctxkit.config.loader import expand_path
+
+    if force:
+        import shutil
+        manifest_path = expand_path(cfg.manifest.path)
+        chroma_path = Path(cfg.vector_store.persist_path).expanduser()
+        if manifest_path.exists():
+            manifest_path.unlink()
+            console.print(f"[dim]Deleted manifest: {manifest_path}[/dim]")
+        if chroma_path.exists():
+            shutil.rmtree(chroma_path)
+            console.print(f"[dim]Deleted vector store: {chroma_path}[/dim]")
+        console.print("[yellow]Force reindex — all files will be re-indexed.[/yellow]")
 
     scanner = VaultScanner(cfg.vault, cfg.indexer)
     manifest = ManifestManager(cfg.manifest, cfg.vault)
@@ -477,7 +492,6 @@ def index(
     start = datetime.now(timezone.utc)
     skipped: list[tuple[Path, str]] = []
 
-    from ctxkit.utils.logging import get_logger
     _log = get_logger("cli.index")
 
     with Progress(SpinnerColumn(), BarColumn(), TextColumn("{task.description}"), console=console) as p:
