@@ -16,20 +16,6 @@
 
 ---
 
-## Why mdcore
-
-| | mdcore | Smart Connections | Khoj | Reor |
-|---|---|---|---|---|
-| Semantic search | Yes | Yes | Yes | Yes |
-| Local-first (Ollama) | Yes | Yes | Yes | Yes |
-| CLI - no GUI required | Yes | No | No | No |
-| Write-back ingestion pipeline | Yes | No | No | No |
-| Conflict detection | Yes | No | No | No |
-| No always-on server | Yes | N/A | No | N/A |
-| Any markdown folder | Yes | Obsidian only | Yes | Yes |
-
-The entire field is read-only RAG with a GUI. mdcore is the only tool that reads and writes your knowledge base from the terminal with user-approved writes.
-
 ---
 
 ## Documentation
