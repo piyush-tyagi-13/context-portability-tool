@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# ctxkit runtime data — never commit these
+~/.ctxkit/
+# personal markdown vault — never publish
+vault/
+*.bak
+
+# Personal notes accidentally in repo root
+health checks*
+
+# Claude Code session data
+.claude/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp

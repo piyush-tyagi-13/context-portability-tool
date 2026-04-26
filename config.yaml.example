@@ -1,0 +1,163 @@
+# ~/.ctxkit/config.yaml
+# ctxkit — Context Portability and Knowledge Ingestion Tool
+
+# ─────────────────────────────
+# VAULT
+# ─────────────────────────────
+vault:
+  path: /Users/you/obsidian-vault
+  excluded_folders:
+    - noise
+  excluded_extensions:
+    - .canvas
+    - .pdf
+
+# ─────────────────────────────
+# INDEXER
+# ─────────────────────────────
+indexer:
+  min_word_count: 50
+  min_structure_signals: 1
+  manifest_path: ~/.ctxkit/manifest.json
+  chunk_size: 512
+  chunk_overlap: 64
+  max_chunk_words: 400
+  heading_aware_splitting: true
+  preserve_tables: true
+  preserve_code_blocks: true
+  heading_levels: [2, 3]
+  batch_size: 32
+  metadata_fields:
+    - source_file
+    - folder_path
+    - filename
+    - heading_breadcrumb
+    - chunk_index
+    - chunk_total
+    - word_count
+    - is_table
+    - is_code
+    - last_indexed
+
+# ─────────────────────────────
+# EMBEDDINGS
+# ─────────────────────────────
+embeddings:
+  backend: ollama                  # ollama | huggingface | openai | gemini
+  local_model: nomic-embed-text    # ollama: nomic-embed-text (default) or bge-m3 (desktop)
+  # backend: huggingface           # CPU-only, no Ollama required
+  # local_model: all-MiniLM-L6-v2 # huggingface: fast CPU model (sentence-transformers)
+  # local_model: BAAI/bge-m3      # huggingface: higher quality, 100+ languages
+  api_model: text-embedding-3-small
+  api_key: null
+  cache_embeddings: true
+  cache_path: ~/.ctxkit/embed_cache
+
+# ─────────────────────────────
+# VECTOR STORE
+# ─────────────────────────────
+vector_store:
+  backend: chroma
+  persist_path: ~/.ctxkit/chroma_db
+  collection_name: ctxkit_vault
+  distance_metric: cosine
+
+# ─────────────────────────────
+# RETRIEVER
+# ─────────────────────────────
+retriever:
+  keyword_prefilter: true
+  keyword_prefilter_min_score: 0.3
+  top_k: 15
+  similarity_threshold: 0.65
+
+  context_block_max_words: 1000
+  max_chunks_per_source: 2
+  stitch_distance: 2
+  stitch_max_words: 400
+
+  signpost_max_items: 8
+  signpost_include_section_hints: true
+
+  output_format: markdown
+  include_word_count: true
+  include_timestamp: true
+  include_source_paths: true
+  include_similarity_scores: false
+
+# ─────────────────────────────
+# INGESTER
+# ─────────────────────────────
+ingester:
+  min_summary_word_count: 100
+  min_summary_headings: 1
+  similarity_threshold_high: 0.82
+  similarity_threshold_low: 0.65
+  max_candidates_for_llm: 3
+  conflict_detection: true
+  conflict_similarity_min: 0.70
+  conflict_similarity_max: 0.85
+  folder_routing_confidence: 0.75
+
+# ─────────────────────────────
+# WRITER
+# ─────────────────────────────
+writer:
+  require_approval: true
+  append_position: end             # end | after_last_heading
+  frontmatter:
+    inject: true
+    fields:
+      - tags
+      - updated
+      - related
+    tag_max_count: 8
+    related_max_count: 5
+  backup:
+    enabled: true
+    backup_path: ~/.ctxkit/backups
+    max_backups_per_file: 5
+
+# ─────────────────────────────
+# LLM
+# ─────────────────────────────
+llm:
+  backend: ollama                  # ollama | openai | anthropic | gemini
+  model: qwen3.5:4b
+  # model: qwen3:8b
+  # model: phi4-mini
+  api_key: null
+  temperature: 0.2
+  think: false
+  max_tokens: 1000
+  timeout_seconds: 30
+  fallback_backend: null
+  fallback_model: null
+  fallback_api_key: null
+
+# ─────────────────────────────
+# MANIFEST
+# ─────────────────────────────
+manifest:
+  path: ~/.ctxkit/manifest.json
+  drift_warning_threshold: 3
+  drift_warning_age_hours: 24
+
+# ─────────────────────────────
+# CLI
+# ─────────────────────────────
+cli:
+  theme: dark                      # dark | light
+  confirm_before_index: true
+  show_similarity_scores: false
+  verbose: false
+
+# ─────────────────────────────
+# LOGGING
+# ─────────────────────────────
+logging:
+  enabled: true
+  log_path: ~/.ctxkit/logs
+  log_level: INFO                  # DEBUG | INFO | WARNING | ERROR
+  max_log_size_mb: 10
+  max_log_files: 5
