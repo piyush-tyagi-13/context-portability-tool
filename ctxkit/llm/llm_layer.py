@@ -38,6 +38,13 @@ class ClassificationResult:
     confidence: float
 
 
+@dataclass
+class FolderRoutingResult:
+    folder: str
+    confidence: float
+    reasoning: str
+
+
 def _build_llm(backend: str, model: str, api_key: Optional[str], cfg: LLMConfig) -> BaseChatModel:
     from ctxkit.core.deps import assert_backend_available
     assert_backend_available(backend, "llm")
@@ -152,6 +159,37 @@ class LLMLayer:
         raw = self._invoke(prompt)
         return _parse_classification(raw)
 
+    def route_folder(
+        self,
+        document: str,
+        folders: list[str],
+        descriptions: dict[str, str] | None = None,
+    ) -> FolderRoutingResult:
+        """Ask LLM to pick the best vault folder for a new document."""
+        folder_lines = []
+        for f in folders:
+            desc = (descriptions or {}).get(f, "")
+            folder_lines.append(f"  {f}" + (f" — {desc}" if desc else ""))
+        folder_block = "\n".join(folder_lines)
+
+        prompt = (
+            "You are a file organiser for a personal knowledge base vault.\n"
+            "Given an incoming document and a list of vault folders, choose the single "
+            "most appropriate folder to save the document in.\n\n"
+            "RULES:\n"
+            "1. Pick the most specific matching folder (prefer a sub-folder over its parent).\n"
+            "2. If no folder is a good fit, pick the closest reasonable one.\n"
+            "3. Never invent a folder that is not in the list.\n\n"
+            "Respond in this exact format (no extra text):\n"
+            "FOLDER: <exact folder path from the list>\n"
+            "CONFIDENCE: <0.0–1.0>\n"
+            "REASONING: <one sentence>\n\n"
+            f"INCOMING DOCUMENT (first 600 chars):\n{document[:600]}\n\n"
+            f"VAULT FOLDERS:\n{folder_block}"
+        )
+        raw = self._invoke(prompt)
+        return _parse_folder_routing(raw, folders)
+
     def synthesise(self, query: str, raw_context: str) -> str:
         """Reformat retrieved vault excerpts into a coherent briefing.
 
@@ -264,3 +302,24 @@ def _parse_classification(raw: str) -> ClassificationResult:
         confidence = 0.7
     reasoning = lines.get("reasoning", "")
     return ClassificationResult(action=action, target_file=target, confidence=confidence, reasoning=reasoning)
+
+
+def _parse_folder_routing(raw: str, valid_folders: list[str]) -> FolderRoutingResult:
+    lines: dict[str, str] = {}
+    for line in raw.strip().splitlines():
+        if ":" in line:
+            key, _, val = line.partition(":")
+            lines[key.strip().lower()] = val.strip()
+
+    folder = lines.get("folder", "")
+    # Validate — must be an exact match from the provided list
+    if folder not in valid_folders:
+        # Best-effort: case-insensitive fallback
+        folder_lower = folder.lower()
+        folder = next((f for f in valid_folders if f.lower() == folder_lower), valid_folders[0] if valid_folders else "")
+    try:
+        confidence = float(lines.get("confidence", "0.7"))
+    except ValueError:
+        confidence = 0.7
+    reasoning = lines.get("reasoning", "")
+    return FolderRoutingResult(folder=folder, confidence=confidence, reasoning=reasoning)

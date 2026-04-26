@@ -755,7 +755,7 @@ def ingest(
 
     folder = ""
     if decision.action == "new":
-        router = FolderRouter(cfg.vault, cfg.ingester)
+        router = FolderRouter(cfg.vault, cfg.ingester, llm)
         folder, folder_confidence = router.route(summary)
         if router.needs_confirmation(folder_confidence):
             console.print(f"\n[yellow]Suggested folder: '{folder}' (low confidence)[/yellow]")
