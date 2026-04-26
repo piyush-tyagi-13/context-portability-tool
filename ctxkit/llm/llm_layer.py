@@ -1,4 +1,5 @@
 from __future__ import annotations
+import os
 import re
 from dataclasses import dataclass
 from typing import Optional
@@ -10,6 +11,42 @@ from ctxkit.config.models import LLMConfig
 from ctxkit.utils.logging import get_logger
 
 log = get_logger("llm")
+
+
+def _extract_token_usage(response_metadata: dict) -> tuple[int, int]:
+    """Return (input_tokens, output_tokens) from a LangChain response_metadata dict.
+
+    Each backend stores usage differently:
+    - Gemini:    usage_metadata.prompt_token_count / candidates_token_count
+    - OpenAI:    token_usage.prompt_tokens / completion_tokens
+    - Anthropic: usage.input_tokens / output_tokens
+    - Ollama:    prompt_eval_count / eval_count
+    """
+    m = response_metadata or {}
+
+    # Gemini
+    usage_meta = m.get("usage_metadata", {})
+    if usage_meta:
+        inp = usage_meta.get("prompt_token_count", 0) or usage_meta.get("input_tokens", 0)
+        out = usage_meta.get("candidates_token_count", 0) or usage_meta.get("output_tokens", 0)
+        if inp or out:
+            return int(inp), int(out)
+
+    # OpenAI
+    token_usage = m.get("token_usage", {})
+    if token_usage:
+        return int(token_usage.get("prompt_tokens", 0)), int(token_usage.get("completion_tokens", 0))
+
+    # Anthropic
+    usage = m.get("usage", {})
+    if usage:
+        return int(usage.get("input_tokens", 0)), int(usage.get("output_tokens", 0))
+
+    # Ollama
+    if "prompt_eval_count" in m or "eval_count" in m:
+        return int(m.get("prompt_eval_count", 0)), int(m.get("eval_count", 0))
+
+    return 0, 0
 
 
 def _strip_hallucinated_citations(briefing: str, raw_context: str) -> str:
@@ -95,6 +132,13 @@ class LLMLayer:
         self._llm: Optional[BaseChatModel] = None
         self._fallback: Optional[BaseChatModel] = None
 
+        # LangSmith observability - set env vars before any LangChain call.
+        if cfg.langsmith_api_key:
+            os.environ["LANGCHAIN_TRACING_V2"] = "true"
+            os.environ["LANGCHAIN_API_KEY"] = cfg.langsmith_api_key
+            os.environ["LANGCHAIN_PROJECT"] = cfg.langsmith_project or "ctxkit"
+            log.info("LangSmith tracing enabled (project: %s)", cfg.langsmith_project or "ctxkit")
+
     def _get_llm(self) -> BaseChatModel:
         if self._llm is None:
             self._llm = _build_llm(self._cfg.backend, self._cfg.model, self._cfg.api_key, self._cfg)
@@ -110,6 +154,14 @@ class LLMLayer:
             )
         return self._fallback
 
+    def _log_tokens(self, label: str, response) -> None:  # type: ignore[type-arg]
+        meta = getattr(response, "response_metadata", {}) or {}
+        inp, out = _extract_token_usage(meta)
+        if inp or out:
+            log.info("tokens [%s] in=%d out=%d total=%d", label, inp, out, inp + out)
+        else:
+            log.debug("tokens [%s] unavailable (backend did not report usage)", label)
+
     def _invoke(self, prompt: str) -> str:
         try:
             response = self._get_llm().invoke(prompt)
@@ -119,6 +171,7 @@ class LLMLayer:
                     "LLM returned an empty response. "
                     "Ollama may be under load — try again, or check 'ollama ps'."
                 )
+            self._log_tokens(self._cfg.model, response)
             return content
         except Exception as primary_err:
             log.warning("Primary LLM failed: %s", primary_err)
@@ -126,6 +179,7 @@ class LLMLayer:
             if fallback:
                 log.info("Trying fallback LLM")
                 response = fallback.invoke(prompt)
+                self._log_tokens(self._cfg.fallback_model or "fallback", response)
                 return response.content  # type: ignore[attr-defined]
             raise RuntimeError(
                 f"LLM call failed and no fallback configured.\nError: {primary_err}"
@@ -249,11 +303,13 @@ class LLMLayer:
                     f"Synthesise model '{synth_model}' returned an empty response. "
                     "Check 'ollama ps' and ensure the model is pulled."
                 )
+            self._log_tokens(synth_model, response)
         elif synth_backend != self._cfg.backend or (synth_model and synth_model != self._cfg.model):
             # Different backend or model from primary — build a dedicated LLM instance.
             model_name = synth_model or self._cfg.model
             synth_llm = _build_llm(synth_backend, model_name, synth_api_key, self._cfg)
             response = synth_llm.invoke(prompt)
+            self._log_tokens(model_name, response)
             content = response.content  # type: ignore[attr-defined]
         else:
             content = self._invoke(prompt)

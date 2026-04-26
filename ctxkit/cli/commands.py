@@ -182,6 +182,8 @@ llm:
   think: false
   max_tokens: 1000
   timeout_seconds: 30
+  # langsmith_api_key: <your-key>   # uncomment to enable LangSmith tracing
+  # langsmith_project: ctxkit       # optional — defaults to "ctxkit"
 
 manifest:
   drift_warning_threshold: 3

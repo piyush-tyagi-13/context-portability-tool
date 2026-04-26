@@ -125,6 +125,11 @@ class LLMConfig(BaseModel):
     synthesise_model: Optional[str] = None
     synthesise_api_key: Optional[str] = None
 
+    # LangSmith observability (optional).
+    # Set api_key + project to trace every LLM call at langsmith.com.
+    langsmith_api_key: Optional[str] = None
+    langsmith_project: Optional[str] = None
+
 
 class ManifestConfig(BaseModel):
     path: str = "~/.ctxkit/manifest.json"

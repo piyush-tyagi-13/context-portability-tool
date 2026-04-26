@@ -1,6 +1,6 @@
 # ctxkit — Context Portability and Knowledge Ingestion Tool
 
-**Version:** 1.3.0 | **Status:** Implementation
+**Version:** 1.3.3 | **Status:** Implementation
 
 A local, LLM-agnostic context delivery and knowledge sync tool for users who live across multiple subscription LLMs.
 
@@ -140,9 +140,56 @@ ANY SUBSCRIPTION LLM (Claude · ChatGPT · Gemini · Others)
 
 ctxkit never talks to your subscription LLM directly. It prepares context (Flow A) and processes output from it (Flow B). The user is the bridge.
 
-**LLM calls in Flow A (retrieval):** one local call to `synthesise_model` (default: `phi4-mini` via Ollama) to reformat raw excerpts into a coherent briefing. No calls to your subscription LLM. Skip with `--raw` to make Flow A fully LLM-free.
+---
 
-**LLM calls in Flow B (ingestion):** only when classification is ambiguous (score between low and high thresholds). Clear-match updates and clear new-file cases require no LLM call.
+## Where LLM Calls Happen
+
+Every call goes to your configured `llm.model` (or `synthesise_model` where noted). Token usage is logged at INFO level to `~/.ctxkit/logs/ctxkit.log` after every call.
+
+### Flow A - `ctxkit search <topic>`
+
+| Phase | LLM call? | Model used | Notes |
+|---|---|---|---|
+| Keyword pre-filter | No | - | BM25 scoring, no LLM |
+| Vector search | No | - | Embedding lookup only |
+| Chunk stitching + formatting | No | - | Pure text assembly |
+| **Synthesis** | **Yes** | `synthesise_model` | Reformats raw excerpts into a briefing. Skip entirely with `--raw` |
+
+`ctxkit search <topic> --raw` makes Flow A fully LLM-free.
+
+### Flow B - `ctxkit ingest`
+
+| Phase | LLM call? | Model used | Condition |
+|---|---|---|---|
+| Embedding + vector search | No | - | Always |
+| **Classification** | **Conditional** | `llm.model` | Only when similarity score is between `similarity_threshold_low` and `similarity_threshold_high`. Clear matches (above high) and clear new-file cases (below low) skip this call |
+| **Folder routing** | **Yes (NEW only)** | `llm.model` | When action=NEW, LLM picks target folder from semantic candidate list. Skipped for UPDATE (target file already known) |
+| **Proposal generation** | **Yes** | `llm.model` | Always - generates human-readable summary of proposed changes before approval |
+
+### `ctxkit map`
+
+No LLM calls. Pure filesystem scan + YAML write.
+
+### `ctxkit index`
+
+No LLM calls. Embedding model only (not an LLM).
+
+---
+
+## Observability
+
+Token usage logged after every call:
+```
+INFO llm - tokens [gemini-2.5-flash-lite] in=312 out=89 total=401
+```
+
+Optional LangSmith tracing - add to `~/.ctxkit/config.yaml`:
+```yaml
+llm:
+  langsmith_api_key: <your-key>
+  langsmith_project: ctxkit
+```
+Traces every LLM call at `smith.langchain.com` with full prompt, response, latency, and token counts.
 
 ---
 
@@ -201,4 +248,4 @@ ctxkit/
 
 ---
 
-*ctxkit — Context Portability and Knowledge Ingestion Tool v1.3.0*
+*ctxkit - Context Portability and Knowledge Ingestion Tool v1.3.3*
