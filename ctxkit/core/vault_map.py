@@ -111,7 +111,8 @@ class VaultMap:
         for folder, desc in folders.items():
             # Quote folder names that contain special YAML chars
             safe_key = f'"{folder}"' if any(c in folder for c in ":{}[]|>&*!") else folder
-            lines.append(f"  {safe_key}: {desc}\n")
+            # Write explicit empty string so YAML doesn't parse blank as None
+            lines.append(f'  {safe_key}: "{desc}"\n')
 
         self._meta_file.write_text("".join(lines), encoding="utf-8")
         # Reload so in-memory state matches file
