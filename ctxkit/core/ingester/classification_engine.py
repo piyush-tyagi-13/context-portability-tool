@@ -1,4 +1,5 @@
 from __future__ import annotations
+import re
 from dataclasses import dataclass
 
 from langchain_core.documents import Document
@@ -9,6 +10,19 @@ from ctxkit.config.models import IngesterConfig
 from ctxkit.utils.logging import get_logger
 
 log = get_logger("ingester.classify")
+
+
+def _is_self_contained(text: str) -> bool:
+    """Return True if the document looks like a standalone artefact.
+
+    Heuristic: has 2+ H2 headings AND (a markdown table OR an ordered/unordered list
+    with 3+ items). Such documents cover a distinct topic in full and should not be
+    blindly appended to an existing file just because of topical similarity.
+    """
+    h2_count = len(re.findall(r"^#{1,2}\s+\S", text, re.MULTILINE))
+    has_table = bool(re.search(r"^\|.+\|", text, re.MULTILINE))
+    list_items = re.findall(r"^[\*\-\d]+[\.\)]\s+\S", text, re.MULTILINE)
+    return h2_count >= 2 and (has_table or len(list_items) >= 3)
 
 
 @dataclass
@@ -49,7 +63,7 @@ class ClassificationEngine:
 
         log.info("Classification top match: %s (%.3f)", top_file, top_score)
 
-        if top_score > self._cfg.similarity_threshold_high:
+        if top_score > self._cfg.similarity_threshold_high and not _is_self_contained(summary_text):
             return ClassificationDecision(
                 action="update", target_file=top_file,
                 confidence=top_score, reasoning="Clear update match (above high threshold).", used_llm=False,
