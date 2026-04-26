@@ -75,3 +75,46 @@ class VaultMap:
         """Return described folders that no longer exist in vault."""
         existing = set(self.all_vault_folders())
         return [f for f in self._data.get("folders", {}) if f not in existing]
+
+    # ── template generation ───────────────────────────────────────────────────
+
+    def write_template(self) -> Path:
+        """Write (or refresh) .ctxkit-meta.yaml with all current folders.
+
+        Existing descriptions are preserved. New folders are added with empty
+        values. Stale folders (no longer in vault) are removed.
+        Returns the path to the written file.
+        """
+        existing_descs = self._data.get("folders", {})
+        all_folders = self.all_vault_folders()
+
+        # Build ordered folder block preserving existing descriptions
+        folders: dict[str, str] = {}
+        for f in all_folders:
+            folders[f] = existing_descs.get(f, "")
+
+        header = (
+            "# ctxkit vault map\n"
+            "# Add a short description after each folder path to help ctxkit\n"
+            "# route ingested documents to the right location.\n"
+            "# Leave blank for folders where the name is self-explanatory.\n"
+            "# Run: ctxkit index   once done.\n"
+            "#\n"
+            "# Example:\n"
+            "#   Career: Job applications, CV, interview prep, OSS contributions\n"
+            "#   Project High Road: Career advancement strategy, 70-80 LPA targeting\n"
+            "#   Tanmay: Tanmay's personal notes — never route incoming docs here\n\n"
+            "folders:\n"
+        )
+
+        lines = [header]
+        for folder, desc in folders.items():
+            # Quote folder names that contain special YAML chars
+            safe_key = f'"{folder}"' if any(c in folder for c in ":{}[]|>&*!") else folder
+            lines.append(f"  {safe_key}: {desc}\n")
+
+        self._meta_file.write_text("".join(lines), encoding="utf-8")
+        # Reload so in-memory state matches file
+        self._data = self._load()
+        log.info("VaultMap template written: %s", self._meta_file)
+        return self._meta_file

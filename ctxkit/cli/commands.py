@@ -464,29 +464,15 @@ def index(
         eligible = scanner.scan()
         p.update(task, description=f"Found {len(eligible)} eligible files")
 
-    # ── vault map: prompt for undescribed folders ─────────────────────────
+    # ── vault map: nudge if .ctxkit-meta.yaml doesn't exist yet ──────────
     from ctxkit.core.vault_map import VaultMap
     vault_path = Path(cfg.vault.path).expanduser()
-    vault_map = VaultMap(vault_path)
-    new_folders = vault_map.undescribed_folders()
-    stale = vault_map.stale_descriptions()
-    if stale:
-        for f in stale:
-            vault_map.remove_description(f)
-        vault_map.save()
-    if new_folders:
-        console.print(f"\n[yellow]{len(new_folders)} folder(s) have no description.[/yellow]")
-        console.print("[dim]Descriptions help ctxkit route ingested docs to the right place.[/dim]")
-        console.print("[dim]Press Enter to skip any folder.[/dim]\n")
-        changed = False
-        for folder in new_folders:
-            desc = typer.prompt(f"  {folder}", default="").strip()
-            if desc:
-                vault_map.set_description(folder, desc)
-                changed = True
-        if changed:
-            vault_map.save()
-            console.print("[green]✓ Vault map saved.[/green]\n")
+    _meta_file = vault_path / ".ctxkit-meta.yaml"
+    if not _meta_file.exists():
+        console.print(
+            "[dim]Tip: run [bold]ctxkit map[/bold] to describe your vault folders "
+            "— improves doc routing during ingest.[/dim]"
+        )
 
     diff = manifest.diff(eligible)
 
@@ -884,9 +870,10 @@ def vault_map_cmd(
     config: Optional[str] = _cfg_option,
     repair: bool = typer.Option(False, "--repair", help="Remove descriptions for folders that no longer exist"),
 ):
-    """View and edit vault folder descriptions used for doc routing."""
+    """Generate vault folder map file — open it, add descriptions, then run ctxkit index."""
     cfg = _load(config)
     from ctxkit.core.vault_map import VaultMap
+    import os, subprocess as _sp
     vault_path = Path(cfg.vault.path).expanduser()
     vault_map = VaultMap(vault_path)
 
@@ -902,52 +889,25 @@ def vault_map_cmd(
         return
 
     all_folders = vault_map.all_vault_folders()
-    descriptions = vault_map.folder_descriptions()
-
     if not all_folders:
         console.print("[yellow]No subfolders found in vault.[/yellow]")
         return
 
-    table = Table(title="Vault Folder Map", box=box.ROUNDED, show_lines=False)
-    table.add_column("Folder", style="cyan", no_wrap=True)
-    table.add_column("Description", style="dim")
+    meta_file = vault_map.write_template()
+    console.print(f"[green]✓[/green] Vault map written: [cyan]{meta_file}[/cyan]")
+    console.print(f"  [dim]{len(all_folders)} folders listed.[/dim]")
+    console.print("\n  Open the file, add a short description next to each folder,")
+    console.print("  then run [bold]ctxkit index[/bold].\n")
 
-    for folder in all_folders:
-        desc = descriptions.get(folder, "[yellow]— no description[/yellow]")
-        table.add_row(folder, desc)
-
-    console.print(table)
-    console.print(f"\n[dim]{len(descriptions)}/{len(all_folders)} folders described.[/dim]")
-
-    edit = typer.confirm("\nEdit descriptions now?", default=False)
-    if not edit:
-        return
-
-    undescribed = vault_map.undescribed_folders()
-    if not undescribed:
-        console.print("[dim]All folders already described. Editing existing descriptions:[/dim]")
-        target_folders = all_folders
+    # Try to open in $EDITOR, fall back to printing path
+    editor = os.environ.get("EDITOR") or os.environ.get("VISUAL")
+    if editor:
+        try:
+            _sp.run([editor, str(meta_file)], check=False)
+        except Exception:
+            console.print(f"  [dim]Could not launch {editor}. Open manually: {meta_file}[/dim]")
     else:
-        target_folders = undescribed
-
-    console.print("[dim]Press Enter to skip. Type a description and Enter to save.[/dim]\n")
-    changed = False
-    for folder in target_folders:
-        current = descriptions.get(folder, "")
-        prompt_text = f"  {folder}" + (f" [{current}]" if current else "")
-        new_desc = typer.prompt(prompt_text, default=current).strip()
-        if new_desc != current:
-            if new_desc:
-                vault_map.set_description(folder, new_desc)
-            else:
-                vault_map.remove_description(folder)
-            changed = True
-
-    if changed:
-        vault_map.save()
-        console.print("[green]✓ Vault map saved.[/green]")
-    else:
-        console.print("[dim]No changes.[/dim]")
+        console.print(f"  [dim]No $EDITOR set. Open manually: {meta_file}[/dim]")
 
 
 # ── ctxkit status ─────────────────────────────────────────────────────────────
