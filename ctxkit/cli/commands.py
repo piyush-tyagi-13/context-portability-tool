@@ -197,7 +197,7 @@ logging:
     out_path.write_text(config_text, encoding="utf-8")
 
 
-_VERSION = "1.2.1"
+_VERSION = "1.2.2"
 
 app = typer.Typer(
     name="ctxkit",
@@ -439,12 +439,16 @@ def index(
         import shutil
         manifest_path = expand_path(cfg.manifest.path)
         chroma_path = Path(cfg.vector_store.persist_path).expanduser()
+        cache_path = expand_path(cfg.embeddings.cache_path) / "embed_cache.pkl"
         if manifest_path.exists():
             manifest_path.unlink()
             console.print(f"[dim]Deleted manifest: {manifest_path}[/dim]")
         if chroma_path.exists():
             shutil.rmtree(chroma_path)
             console.print(f"[dim]Deleted vector store: {chroma_path}[/dim]")
+        if cache_path.exists():
+            cache_path.unlink()
+            console.print(f"[dim]Deleted embed cache: {cache_path}[/dim]")
         console.print("[yellow]Force reindex — all files will be re-indexed.[/yellow]")
 
     scanner = VaultScanner(cfg.vault, cfg.indexer)
