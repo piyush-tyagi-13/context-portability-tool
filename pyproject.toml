@@ -73,9 +73,9 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/piyush-tyagi-13/mdcore"
-Documentation = "https://github.com/piyush-tyagi-13/mdcore/tree/main/docs"
-Issues = "https://github.com/piyush-tyagi-13/mdcore/issues"
+Homepage = "https://github.com/piyush-tyagi-13/markdown-core-ai"
+Documentation = "https://github.com/piyush-tyagi-13/markdown-core-ai/tree/main/docs"
+Issues = "https://github.com/piyush-tyagi-13/markdown-core-ai/issues"
 
 [project.scripts]
 mdcore = "mdcore.cli.commands:app"
