@@ -756,7 +756,7 @@ def ingest(
     folder = ""
     if decision.action == "new":
         router = FolderRouter(cfg.vault, cfg.ingester, llm)
-        folder, folder_confidence = router.route(summary)
+        folder, folder_confidence = router.route(summary, top_scores=decision.top_scores)
         if router.needs_confirmation(folder_confidence):
             console.print(f"\n[yellow]Suggested folder: '{folder}' (low confidence)[/yellow]")
             override = typer.prompt("Enter folder path or press Enter to accept", default=folder)

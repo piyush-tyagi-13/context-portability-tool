@@ -32,6 +32,7 @@ class ClassificationDecision:
     confidence: float
     reasoning: str
     used_llm: bool
+    top_scores: dict[str, float] = None  # file → similarity, top-k results
 
 
 def _cosine_sim(a: list[float], b: list[float]) -> float:
@@ -52,12 +53,17 @@ class ClassificationEngine:
     def classify(self, summary_embedding: list[float], summary_text: str) -> ClassificationDecision:
         file_embeddings = self._store.file_embeddings()
         if not file_embeddings:
-            return ClassificationDecision(action="new", target_file=None, confidence=1.0, reasoning="Empty index — all ingestions are new files.", used_llm=False)
+            return ClassificationDecision(action="new", target_file=None, confidence=1.0,
+                                          reasoning="Empty index — all ingestions are new files.",
+                                          used_llm=False, top_scores={})
 
         scores = {
             sf: _cosine_sim(summary_embedding, emb)
             for sf, emb in file_embeddings.items()
         }
+        # Keep top-10 scores for folder routing downstream
+        top_scores = dict(sorted(scores.items(), key=lambda x: x[1], reverse=True)[:10])
+
         top_file = max(scores, key=lambda k: scores[k])
         top_score = scores[top_file]
 
@@ -66,13 +72,15 @@ class ClassificationEngine:
         if top_score > self._cfg.similarity_threshold_high and not _is_self_contained(summary_text):
             return ClassificationDecision(
                 action="update", target_file=top_file,
-                confidence=top_score, reasoning="Clear update match (above high threshold).", used_llm=False,
+                confidence=top_score, reasoning="Clear update match (above high threshold).",
+                used_llm=False, top_scores=top_scores,
             )
 
         if top_score < self._cfg.similarity_threshold_low:
             return ClassificationDecision(
                 action="new", target_file=None,
-                confidence=1.0 - top_score, reasoning="Clear new file (below low threshold).", used_llm=False,
+                confidence=1.0 - top_score, reasoning="Clear new file (below low threshold).",
+                used_llm=False, top_scores=top_scores,
             )
 
         # Ambiguous — call LLM
@@ -90,4 +98,5 @@ class ClassificationEngine:
             confidence=result.confidence,
             reasoning=result.reasoning,
             used_llm=True,
+            top_scores=top_scores,
         )
