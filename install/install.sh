@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ctxkit installer
-# Usage: curl -fsSL https://raw.githubusercontent.com/YOUR_USERNAME/context-portability-tool/main/install/install.sh | bash
+# Usage: curl -fsSL https://raw.githubusercontent.com/piyush-tyagi-13/context-portability-tool/main/install/install.sh | bash
 
 set -euo pipefail
 

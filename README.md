@@ -1,6 +1,6 @@
 # ctxkit — Context Portability and Knowledge Ingestion Tool
 
-**Version:** 1.1.0 | **Status:** Implementation
+**Version:** 1.2.0 | **Status:** Implementation
 
 A local, LLM-agnostic context delivery and knowledge sync tool for users who live across multiple subscription LLMs.
 
@@ -30,13 +30,13 @@ A local, LLM-agnostic context delivery and knowledge sync tool for users who liv
 ### macOS — Homebrew
 
 ```bash
-brew install YOUR_USERNAME/tap/ctxkit
+brew install piyush-tyagi-13/tap/ctxkit
 ```
 
 ### Any platform — shell script (installs uv + ctxkit)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/YOUR_USERNAME/context-portability-tool/main/install/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/piyush-tyagi-13/context-portability-tool/main/install/install.sh | bash
 ```
 
 ### Manual (if you already have uv or pipx)

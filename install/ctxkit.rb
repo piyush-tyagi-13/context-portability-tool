@@ -2,7 +2,7 @@ class Ctxkit < Formula
   include Language::Python::Virtualenv
 
   desc "Context portability and knowledge ingestion tool — bridge your markdown vault to any subscription LLM"
-  homepage "https://github.com/YOUR_USERNAME/context-portability-tool"
+  homepage "https://github.com/piyush-tyagi-13/context-portability-tool"
   url "https://files.pythonhosted.org/packages/.../ctxkit-1.2.0.tar.gz"
   sha256 "REPLACE_WITH_ACTUAL_SHA256_AFTER_PYPI_PUBLISH"
   license "MIT"
