@@ -12,7 +12,7 @@ A local, LLM-agnostic context delivery and knowledge sync tool for users who liv
 
 **Flow A — Context Retrieval:** Given a topic, it retrieves relevant chunks from your vault, synthesises them into a coherent, cited briefing (using a local LLM), and writes the result to `<vault>/ctxkit-output/`. You open the file, copy it, and paste it as the opening context of your LLM conversation. Zero API calls to your subscription LLM. Zero cost beyond your existing subscription.
 
-**Flow B — Knowledge Ingestion:** Given a session summary from a completed LLM conversation, it classifies the content against your existing knowledge base, detects conflicts, generates a proposal, and — only after your explicit approval — writes the changes to your vault and reindexes.
+**Flow B — Knowledge Ingestion:** Given any document — a session summary from an LLM conversation, a research note, an article, a strategy doc, or any new piece of knowledge — it classifies the content against your existing vault, decides whether to update an existing note or create a new one, routes it to the right folder, detects conflicts, generates a proposal, and — only after your explicit approval — writes the changes to your vault and reindexes automatically.
 
 ---
 
@@ -74,8 +74,8 @@ ctxkit index                          # Scan vault, show diff, confirm, index de
 ctxkit search <topic>                 # Synthesise briefing → write to <vault>/ctxkit-output/ (Flow A)
 ctxkit search <topic> --raw           # Raw excerpts only — skip synthesis
 ctxkit search <topic> --verbose       # Show chunk scores alongside results
-ctxkit ingest                         # Accept session summary, classify, propose (Flow B)
-ctxkit ingest --file summary.md       # Ingest from a file
+ctxkit ingest                         # Paste any document — classify, route, propose (Flow B)
+ctxkit ingest --file doc.md           # Ingest from a file (session summary, article, notes, etc.)
 ctxkit map                            # Generate vault folder map for doc routing
 ctxkit status                         # Show index health and drift warnings
 ctxkit eval [topic]                   # Run quality evaluation checklist
@@ -109,9 +109,11 @@ ctxkit search "Bruno ingress path adaptor"
 # → writes <vault>/ctxkit-output/2026-04-25-bruno-ingress-path-adaptor.md
 # → open file, copy contents → paste into Claude/ChatGPT/Gemini
 
-# 4. After an LLM session, ingest the summary
-ctxkit ingest --file my-session-summary.md
-# → review the proposal → approve
+# 4. Ingest any document into your vault
+ctxkit ingest --file my-session-summary.md   # LLM session summary
+ctxkit ingest --file oss-strategy.md         # standalone research doc
+ctxkit ingest                                # paste content directly
+# → ctxkit classifies, routes to right folder, proposes changes → approve
 ```
 
 ---
