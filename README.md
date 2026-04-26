@@ -1,6 +1,6 @@
 # ctxkit — Context Portability and Knowledge Ingestion Tool
 
-**Version:** 1.2.0 | **Status:** Implementation
+**Version:** 1.3.0 | **Status:** Implementation
 
 A local, LLM-agnostic context delivery and knowledge sync tool for users who live across multiple subscription LLMs.
 
@@ -76,6 +76,7 @@ ctxkit search <topic> --raw           # Raw excerpts only — skip synthesis
 ctxkit search <topic> --verbose       # Show chunk scores alongside results
 ctxkit ingest                         # Accept session summary, classify, propose (Flow B)
 ctxkit ingest --file summary.md       # Ingest from a file
+ctxkit map                            # Generate vault folder map for doc routing
 ctxkit status                         # Show index health and drift warnings
 ctxkit eval [topic]                   # Run quality evaluation checklist
 ctxkit config                         # Open config file in editor
@@ -198,4 +199,4 @@ ctxkit/
 
 ---
 
-*ctxkit — Context Portability and Knowledge Ingestion Tool v1.2.0*
+*ctxkit — Context Portability and Knowledge Ingestion Tool v1.3.0*
