@@ -3,8 +3,8 @@ class Ctxkit < Formula
 
   desc "Context portability and knowledge ingestion tool — bridge your markdown vault to any subscription LLM"
   homepage "https://github.com/piyush-tyagi-13/context-portability-tool"
-  url "https://files.pythonhosted.org/packages/.../ctxkit-1.2.0.tar.gz"
-  sha256 "REPLACE_WITH_ACTUAL_SHA256_AFTER_PYPI_PUBLISH"
+  url "https://files.pythonhosted.org/packages/a3/39/2009dec8daf3b19a9deb66424274e7b4e081bd35b1a687558cf3b9c4278d/ctxkit_ai-1.2.0.tar.gz"
+  sha256 "51a3863a34c585765ceb7b55a07a431f8123798d8ca5139b347b3edec72240d8"
   license "MIT"
 
   depends_on "python@3.12"
