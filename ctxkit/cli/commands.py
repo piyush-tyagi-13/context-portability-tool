@@ -873,7 +873,6 @@ def vault_map_cmd(
     """Generate vault folder map file — open it, add descriptions, then run ctxkit index."""
     cfg = _load(config)
     from ctxkit.core.vault_map import VaultMap
-    import os, subprocess as _sp
     vault_path = Path(cfg.vault.path).expanduser()
     vault_map = VaultMap(vault_path)
 
@@ -896,18 +895,8 @@ def vault_map_cmd(
     meta_file = vault_map.write_template()
     console.print(f"[green]✓[/green] Vault map written: [cyan]{meta_file}[/cyan]")
     console.print(f"  [dim]{len(all_folders)} folders listed.[/dim]")
-    console.print("\n  Open the file, add a short description next to each folder,")
-    console.print("  then run [bold]ctxkit index[/bold].\n")
-
-    # Try to open in $EDITOR, fall back to printing path
-    editor = os.environ.get("EDITOR") or os.environ.get("VISUAL")
-    if editor:
-        try:
-            _sp.run([editor, str(meta_file)], check=False)
-        except Exception:
-            console.print(f"  [dim]Could not launch {editor}. Open manually: {meta_file}[/dim]")
-    else:
-        console.print(f"  [dim]No $EDITOR set. Open manually: {meta_file}[/dim]")
+    console.print("\n  Open the file in your editor, add a short description")
+    console.print("  next to each folder, save, then run [bold]ctxkit index[/bold].")
 
 
 # ── ctxkit status ─────────────────────────────────────────────────────────────
