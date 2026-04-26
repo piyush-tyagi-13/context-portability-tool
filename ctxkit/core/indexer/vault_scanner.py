@@ -34,6 +34,8 @@ class VaultScanner:
                 continue
             if path.suffix.lower() != ".md":
                 continue
+            if path.name == ".ctxkit-meta.yaml":
+                continue
             if path.suffix.lower() in self._excluded_extensions:
                 continue
             if any(part.lower() in self._excluded_folders for part in path.parts):

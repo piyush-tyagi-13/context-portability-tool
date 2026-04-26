@@ -464,6 +464,30 @@ def index(
         eligible = scanner.scan()
         p.update(task, description=f"Found {len(eligible)} eligible files")
 
+    # ── vault map: prompt for undescribed folders ─────────────────────────
+    from ctxkit.core.vault_map import VaultMap
+    vault_path = Path(cfg.vault.path).expanduser()
+    vault_map = VaultMap(vault_path)
+    new_folders = vault_map.undescribed_folders()
+    stale = vault_map.stale_descriptions()
+    if stale:
+        for f in stale:
+            vault_map.remove_description(f)
+        vault_map.save()
+    if new_folders:
+        console.print(f"\n[yellow]{len(new_folders)} folder(s) have no description.[/yellow]")
+        console.print("[dim]Descriptions help ctxkit route ingested docs to the right place.[/dim]")
+        console.print("[dim]Press Enter to skip any folder.[/dim]\n")
+        changed = False
+        for folder in new_folders:
+            desc = typer.prompt(f"  {folder}", default="").strip()
+            if desc:
+                vault_map.set_description(folder, desc)
+                changed = True
+        if changed:
+            vault_map.save()
+            console.print("[green]✓ Vault map saved.[/green]\n")
+
     diff = manifest.diff(eligible)
 
     if inspect:
@@ -851,6 +875,79 @@ def _derive_filename(summary: str) -> str:
             safe = re.sub(r"[^a-z0-9\- ]", "", title.lower())
             return safe.replace(" ", "-")[:50] + ".md"
     return "ingested-note.md"
+
+
+# ── ctxkit map ────────────────────────────────────────────────────────────────
+
+@app.command(name="map")
+def vault_map_cmd(
+    config: Optional[str] = _cfg_option,
+    repair: bool = typer.Option(False, "--repair", help="Remove descriptions for folders that no longer exist"),
+):
+    """View and edit vault folder descriptions used for doc routing."""
+    cfg = _load(config)
+    from ctxkit.core.vault_map import VaultMap
+    vault_path = Path(cfg.vault.path).expanduser()
+    vault_map = VaultMap(vault_path)
+
+    if repair:
+        stale = vault_map.stale_descriptions()
+        if stale:
+            for f in stale:
+                vault_map.remove_description(f)
+            vault_map.save()
+            console.print(f"[green]Removed {len(stale)} stale description(s).[/green]")
+        else:
+            console.print("[dim]No stale descriptions found.[/dim]")
+        return
+
+    all_folders = vault_map.all_vault_folders()
+    descriptions = vault_map.folder_descriptions()
+
+    if not all_folders:
+        console.print("[yellow]No subfolders found in vault.[/yellow]")
+        return
+
+    table = Table(title="Vault Folder Map", box=box.ROUNDED, show_lines=False)
+    table.add_column("Folder", style="cyan", no_wrap=True)
+    table.add_column("Description", style="dim")
+
+    for folder in all_folders:
+        desc = descriptions.get(folder, "[yellow]— no description[/yellow]")
+        table.add_row(folder, desc)
+
+    console.print(table)
+    console.print(f"\n[dim]{len(descriptions)}/{len(all_folders)} folders described.[/dim]")
+
+    edit = typer.confirm("\nEdit descriptions now?", default=False)
+    if not edit:
+        return
+
+    undescribed = vault_map.undescribed_folders()
+    if not undescribed:
+        console.print("[dim]All folders already described. Editing existing descriptions:[/dim]")
+        target_folders = all_folders
+    else:
+        target_folders = undescribed
+
+    console.print("[dim]Press Enter to skip. Type a description and Enter to save.[/dim]\n")
+    changed = False
+    for folder in target_folders:
+        current = descriptions.get(folder, "")
+        prompt_text = f"  {folder}" + (f" [{current}]" if current else "")
+        new_desc = typer.prompt(prompt_text, default=current).strip()
+        if new_desc != current:
+            if new_desc:
+                vault_map.set_description(folder, new_desc)
+            else:
+                vault_map.remove_description(folder)
+            changed = True
+
+    if changed:
+        vault_map.save()
+        console.print("[green]✓ Vault map saved.[/green]")
+    else:
+        console.print("[dim]No changes.[/dim]")
 
 
 # ── ctxkit status ─────────────────────────────────────────────────────────────
