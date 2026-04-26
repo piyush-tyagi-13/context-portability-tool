@@ -30,21 +30,22 @@ A local, LLM-agnostic context delivery and knowledge sync tool for users who liv
 ### macOS — Homebrew
 
 ```bash
-brew install piyush-tyagi-13/tap/ctxkit
+brew tap piyush-tyagi-13/ctxkit
+brew install ctxkit
 ```
 
 ### Any platform — shell script (installs uv + ctxkit)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/piyush-tyagi-13/context-portability-tool/main/install/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/piyush-tyagi-13/context-portability-tool/master/install/install.sh | bash
 ```
 
 ### Manual (if you already have uv or pipx)
 
 ```bash
-uv tool install ctxkit       # preferred
+uv tool install ctxkit-ai       # preferred
 # or
-pipx install ctxkit
+pipx install ctxkit-ai
 ```
 
 ### Ollama models (for local inference)
@@ -197,4 +198,4 @@ ctxkit/
 
 ---
 
-*ctxkit — Context Portability and Knowledge Ingestion Tool v1.1.0*
+*ctxkit — Context Portability and Knowledge Ingestion Tool v1.2.0*
