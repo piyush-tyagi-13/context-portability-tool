@@ -1,4 +1,6 @@
 class Ctxkit < Formula
+  include Language::Python::Virtualenv
+
   desc "Context portability and knowledge ingestion tool — bridge your markdown vault to any subscription LLM"
   homepage "https://github.com/piyush-tyagi-13/context-portability-tool"
   url "https://files.pythonhosted.org/packages/a3/39/2009dec8daf3b19a9deb66424274e7b4e081bd35b1a687558cf3b9c4278d/ctxkit_ai-1.2.0.tar.gz"
