@@ -1,5 +1,5 @@
-# ~/.ctxkit/config.yaml
-# ctxkit — Context Portability and Knowledge Ingestion Tool
+# ~/.mdcore/config.yaml
+# mdcore - Markdown CORE AI
 
 # ─────────────────────────────
 # VAULT
@@ -18,7 +18,7 @@ vault:
 indexer:
   min_word_count: 50
   min_structure_signals: 1
-  manifest_path: ~/.ctxkit/manifest.json
+  manifest_path: ~/.mdcore/manifest.json
   chunk_size: 512
   chunk_overlap: 64
   max_chunk_words: 400
@@ -51,15 +51,15 @@ embeddings:
   api_model: text-embedding-3-small
   api_key: null
   cache_embeddings: true
-  cache_path: ~/.ctxkit/embed_cache
+  cache_path: ~/.mdcore/embed_cache
 
 # ─────────────────────────────
 # VECTOR STORE
 # ─────────────────────────────
 vector_store:
   backend: chroma
-  persist_path: ~/.ctxkit/chroma_db
-  collection_name: ctxkit_vault
+  persist_path: ~/.mdcore/chroma_db
+  collection_name: mdcore_vault
   distance_metric: cosine
 
 # ─────────────────────────────
@@ -115,7 +115,7 @@ writer:
     related_max_count: 5
   backup:
     enabled: true
-    backup_path: ~/.ctxkit/backups
+    backup_path: ~/.mdcore/backups
     max_backups_per_file: 5
 
 # ─────────────────────────────
@@ -139,7 +139,7 @@ llm:
 # MANIFEST
 # ─────────────────────────────
 manifest:
-  path: ~/.ctxkit/manifest.json
+  path: ~/.mdcore/manifest.json
   drift_warning_threshold: 3
   drift_warning_age_hours: 24
 
@@ -157,7 +157,7 @@ cli:
 # ─────────────────────────────
 logging:
   enabled: true
-  log_path: ~/.ctxkit/logs
+  log_path: ~/.mdcore/logs
   log_level: INFO                  # DEBUG | INFO | WARNING | ERROR
   max_log_size_mb: 10
   max_log_files: 5

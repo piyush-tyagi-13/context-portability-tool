@@ -1,1 +1,0 @@
-../../docs/config-reference.md

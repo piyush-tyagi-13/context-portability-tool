@@ -3,16 +3,16 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "ctxkit-ai"
-version = "1.3.3"
-description = "Context portability and knowledge ingestion tool — bridge your markdown vault to any subscription LLM"
+name = "markdowncore-ai"
+version = "1.0.0"
+description = "Markdown CORE AI - Classification, Organisation, Retrieval & Entry for your personal markdown knowledge base"
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.11"
 authors = [
     { name = "Piyush Tyagi" }
 ]
-keywords = ["llm", "rag", "knowledge-base", "obsidian", "context", "markdown", "ollama"]
+keywords = ["llm", "rag", "knowledge-base", "markdown", "second-brain", "pkm", "obsidian", "ollama", "local-ai"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Environment :: Console",
@@ -41,9 +41,9 @@ dependencies = [
 ]
 
 # Optional backend extras — install only what you need.
-# pipx install ctxkit            → Ollama only (default)
-# pipx install ctxkit[openai]    → add OpenAI support
-# pipx install ctxkit[all]       → every backend
+# pipx install markdowncore-ai            -> Ollama only (default)
+# pipx install markdowncore-ai[openai]    -> add OpenAI support
+# pipx install markdowncore-ai[all]       -> every backend
 [project.optional-dependencies]
 openai = [
     "langchain-openai>=0.2",
@@ -73,16 +73,16 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/piyushtyagi28/context-portability-tool"
-Documentation = "https://github.com/piyushtyagi28/context-portability-tool/tree/main/docs"
-Issues = "https://github.com/piyushtyagi28/context-portability-tool/issues"
+Homepage = "https://github.com/piyush-tyagi-13/mdcore"
+Documentation = "https://github.com/piyush-tyagi-13/mdcore/tree/main/docs"
+Issues = "https://github.com/piyush-tyagi-13/mdcore/issues"
 
 [project.scripts]
-ctxkit = "ctxkit.cli.commands:app"
+mdcore = "mdcore.cli.commands:app"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["ctxkit*"]
+include = ["mdcore*"]
 
 [tool.setuptools.package-data]
-"ctxkit.docs" = ["*.md"]
+"mdcore.docs" = ["*.md"]
