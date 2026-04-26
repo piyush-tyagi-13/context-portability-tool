@@ -76,8 +76,8 @@ class IngesterConfig(BaseModel):
     similarity_threshold_low: float = 0.65
     max_candidates_for_llm: int = 3
     conflict_detection: bool = True
-    conflict_similarity_min: float = 0.70
-    conflict_similarity_max: float = 0.85
+    conflict_similarity_min: float = 0.88
+    conflict_similarity_max: float = 0.97
     folder_routing_confidence: float = 0.75
 
 

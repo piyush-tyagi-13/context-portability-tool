@@ -197,7 +197,7 @@ logging:
     out_path.write_text(config_text, encoding="utf-8")
 
 
-_VERSION = "1.2.2"
+_VERSION = "1.2.3"
 
 app = typer.Typer(
     name="ctxkit",

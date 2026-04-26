@@ -130,15 +130,23 @@ class LLMLayer:
             for d in candidates
         )
         prompt = (
-            "You are a knowledge base classifier. Given an incoming session summary and a list "
-            "of candidate files, decide whether the summary should UPDATE an existing file or "
+            "You are a knowledge base classifier. Given an incoming document and a list "
+            "of candidate files, decide whether the document should UPDATE an existing file or "
             "create a NEW file.\n\n"
+            "RULES — apply in order:\n"
+            "1. If the incoming document is self-contained and structured (has its own headings, "
+            "tables, or prioritised lists covering a distinct topic), prefer NEW over UPDATE.\n"
+            "2. Only choose UPDATE if the incoming content is clearly a continuation, correction, "
+            "or direct elaboration of an existing file — not merely topically related.\n"
+            "3. Topical similarity alone is NOT sufficient reason to UPDATE. A document about "
+            "'OSS contribution strategy' is related to a career playbook but is its own artefact.\n"
+            "4. When in doubt between UPDATE and NEW, choose NEW.\n\n"
             "Respond in this exact format (no extra text):\n"
             "ACTION: update|new\n"
             "TARGET: <vault-relative path or 'none' for new>\n"
             "CONFIDENCE: <0.0–1.0>\n"
             "REASONING: <one sentence>\n\n"
-            f"INCOMING SUMMARY:\n{summary[:800]}\n\n"
+            f"INCOMING DOCUMENT:\n{summary[:800]}\n\n"
             f"CANDIDATE FILES:\n{candidate_block}"
         )
         raw = self._invoke(prompt)
