@@ -4,7 +4,7 @@
 
 `mdcore` is a local, LLM-agnostic knowledge base engine for anyone with a folder of markdown notes. It reads and writes your vault intelligently - retrieve context on demand, ingest new knowledge with automatic classification and routing, all from the terminal or a TUI.
 
-**PyPI:** `markdowncore-ai` | **CLI:** `mdcore` | **Version:** 1.0.2
+**PyPI:** `markdowncore-ai` | **CLI:** `mdcore` | **Version:** 1.0.3
 
 ---
 
@@ -239,4 +239,4 @@ llm:
 
 ---
 
-*mdcore - Markdown CORE AI v1.0.2*
+*mdcore - Markdown CORE AI v1.0.3*

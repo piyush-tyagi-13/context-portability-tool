@@ -199,7 +199,7 @@ logging:
     out_path.write_text(config_text, encoding="utf-8")
 
 
-_VERSION = "1.0.2"
+_VERSION = "1.0.3"
 
 app = typer.Typer(
     name="mdcore",
