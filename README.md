@@ -122,7 +122,7 @@ mdcore supports local and API-backed models. Mix and match per use case.
 | Gemini | `gemini-2.5-flash-lite` | `models/gemini-embedding-001` | none (bundled) |
 | OpenAI | `gpt-4o-mini` | `text-embedding-3-small` | `[openai]` |
 | Anthropic | `claude-haiku-4-5` | use Ollama or OpenAI | `[anthropic]` |
-| Aggregator | free-tier key pool | free-tier key pool | `[aggregator]` |
+| Aggregator | free-tier key pool | free-tier key pool | `llm-keypool` (separate) |
 
 ```bash
 uv tool install "markdowncore-ai[openai]"
@@ -138,21 +138,17 @@ uv tool install "markdowncore-ai[all]"    # every backend
 
 ```bash
 # Install as standalone tool so its CLI is available system-wide
-uv tool install "llm-aggregator @ git+https://github.com/piyush-tyagi-13/llm-aggregator"
-
-# With Textual TUI
-uv tool install "llm-aggregator[gui] @ git+https://github.com/piyush-tyagi-13/llm-aggregator"
+uv tool install "llm-keypool[gui]"
 
 # Also add it to mdcore's environment so mdcore can import it
-uv tool install --force "markdowncore-ai[gui]" --with "llm-aggregator @ git+https://github.com/piyush-tyagi-13/llm-aggregator"
+uv tool install --force "markdowncore-ai[gui]" --with llm-keypool
 ```
 
-Upgrading llm-aggregator:
+Upgrading llm-keypool:
 
 ```bash
-uv tool install --force "llm-aggregator[gui] @ git+https://github.com/piyush-tyagi-13/llm-aggregator"
-# re-add --with to mdcore too
-uv tool install --force "markdowncore-ai[gui]" --with "llm-aggregator @ git+https://github.com/piyush-tyagi-13/llm-aggregator"
+uv tool upgrade llm-keypool
+uv tool install --force "markdowncore-ai[gui]" --with llm-keypool
 ```
 
 Keys DB lives at `~/.llm-aggregator/keys.db`. Register free-tier keys:
