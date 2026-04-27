@@ -33,14 +33,24 @@ Both flows work fully local with Ollama. No subscription LLM API calls. No alway
 ## Installation
 
 ```bash
-# Recommended
-uv tool install markdowncore-ai
-
-# With TUI
+# Recommended - with TUI
 uv tool install "markdowncore-ai[gui]"
+
+# With aggregator backend (free-tier key pool, no paid API needed)
+uv tool install "markdowncore-ai[gui]" --with "llm-aggregator @ git+https://github.com/piyush-tyagi-13/llm-aggregator"
 
 # pipx
 pipx install markdowncore-ai
+```
+
+### Upgrading
+
+```bash
+# Upgrade mdcore only
+uv tool upgrade markdowncore-ai
+
+# Upgrade mdcore + llm-aggregator together
+uv tool install --force --refresh "markdowncore-ai[gui]" --with "llm-aggregator @ git+https://github.com/piyush-tyagi-13/llm-aggregator"
 ```
 
 ### Ollama models (local inference)
@@ -130,19 +140,32 @@ uv tool install "markdowncore-ai[all]"    # every backend
 
 `aggregator` routes calls through [llm-aggregator](https://github.com/piyush-tyagi-13/llm-aggregator) - a local SQLite-backed key pool that round-robins free-tier API keys with automatic 429 cooldown. No `api_key` needed in mdcore config.
 
-Install separately (not on PyPI):
+Included in the recommended install command above. Keys DB lives at `~/.llm-aggregator/keys.db`.
+
+Register free-tier keys (get them from the linked consoles - all have free tiers):
 
 ```bash
-pip install git+https://github.com/piyush-tyagi-13/llm-aggregator
-# or if installed via uv tool:
-uv tool install markdowncore-ai --with "llm-aggregator @ git+https://github.com/piyush-tyagi-13/llm-aggregator"
+# Groq - https://console.groq.com/keys
+llm-aggregator add groq <KEY> --model llama-3.3-70b-versatile --category general_purpose
+
+# Cerebras - https://cloud.cerebras.ai
+llm-aggregator add cerebras <KEY> --model llama-3.3-70b --category general_purpose
+
+# Mistral - https://console.mistral.ai/api-keys
+llm-aggregator add mistral <KEY> --model mistral-small-latest --category general_purpose
+
+# OpenRouter - https://openrouter.ai/settings/keys
+llm-aggregator add openrouter <KEY> --model meta-llama/llama-3.3-70b-instruct:free --category general_purpose
+
+# Check registered keys
+llm-aggregator status
 ```
 
 ```yaml
 llm:
   backend: aggregator
-  aggregator_category: general_purpose       # key pool category (optional)
-  aggregator_rotate_every: 5      # requests per key before rotation
+  aggregator_category: general_purpose
+  aggregator_rotate_every: 5
 
 embeddings:
   backend: aggregator
