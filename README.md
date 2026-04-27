@@ -141,12 +141,12 @@ uv tool install markdowncore-ai --with "llm-aggregator @ git+https://github.com/
 ```yaml
 llm:
   backend: aggregator
-  aggregator_category: fast       # key pool category (optional)
+  aggregator_category: general_purpose       # key pool category (optional)
   aggregator_rotate_every: 5      # requests per key before rotation
 
 embeddings:
   backend: aggregator
-  aggregator_category: embeddings
+  aggregator_category: general_purpose
 ```
 
 ### Hardware guidance
@@ -183,7 +183,7 @@ Keep model choices in a separate `~/.mdcore/models.yaml` - useful for switching 
 # ~/.mdcore/models.yaml
 llm:
   backend: aggregator
-  aggregator_category: fast
+  aggregator_category: general_purpose
 
 embeddings:
   backend: ollama
