@@ -46,6 +46,10 @@ def _extract_token_usage(response_metadata: dict) -> tuple[int, int]:
     if "prompt_eval_count" in m or "eval_count" in m:
         return int(m.get("prompt_eval_count", 0)), int(m.get("eval_count", 0))
 
+    # llm-aggregator (reports combined tokens_used only)
+    if "tokens_used" in m:
+        return 0, int(m.get("tokens_used", 0))
+
     return 0, 0
 
 
@@ -121,6 +125,12 @@ def _build_llm(backend: str, model: str, api_key: Optional[str], cfg: LLMConfig)
                 temperature=cfg.temperature,
                 max_output_tokens=cfg.max_tokens,
                 request_timeout=cfg.timeout_seconds,
+            )
+        case "aggregator":
+            from llm_aggregator import AggregatorChat
+            return AggregatorChat(
+                category=cfg.aggregator_category,
+                rotate_every=cfg.aggregator_rotate_every,
             )
         case _:
             raise ValueError(f"Unknown LLM backend: {backend}")

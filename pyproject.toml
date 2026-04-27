@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "markdowncore-ai"
-version = "1.0.1"
+version = "1.0.2"
 description = "Markdown CORE AI - Classification, Organisation, Retrieval & Entry for your personal markdown knowledge base"
 readme = "README.md"
 license = "MIT"
@@ -64,6 +64,11 @@ all = [
     "langchain-google-genai>=2",
     "langchain-huggingface>=0.1",
     "sentence-transformers>=3",
+    # aggregator not included here — install separately from GitHub
+]
+aggregator = [
+    # llm-aggregator is not on PyPI — install separately:
+    # pip install git+https://github.com/piyush-tyagi-13/llm-aggregator
 ]
 gui = [
     "textual>=0.80",

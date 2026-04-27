@@ -33,12 +33,13 @@ class IndexerConfig(BaseModel):
 
 
 class EmbeddingsConfig(BaseModel):
-    backend: Literal["ollama", "huggingface", "openai", "gemini"] = "ollama"
+    backend: Literal["ollama", "huggingface", "openai", "gemini", "aggregator"] = "ollama"
     local_model: str = "nomic-embed-text"   # ollama: nomic-embed-text / bge-m3; huggingface: all-MiniLM-L6-v2
     api_model: str = "text-embedding-3-small"
     api_key: Optional[str] = None
     cache_embeddings: bool = True
     cache_path: str = "~/.mdcore/embed_cache"
+    aggregator_category: Optional[str] = None  # target key pool category (e.g. "embeddings")
 
 
 class VectorStoreConfig(BaseModel):
@@ -101,7 +102,7 @@ class WriterConfig(BaseModel):
     backup: BackupConfig = Field(default_factory=BackupConfig)
 
 
-_LLMBackend = Literal["ollama", "openai", "anthropic", "gemini", "huggingface"]
+_LLMBackend = Literal["ollama", "openai", "anthropic", "gemini", "huggingface", "aggregator"]
 
 
 class LLMConfig(BaseModel):
@@ -117,10 +118,15 @@ class LLMConfig(BaseModel):
     fallback_model: Optional[str] = None
     fallback_api_key: Optional[str] = None
 
+    # Aggregator backend options (used when backend="aggregator").
+    # Keys are managed by llm-aggregator's SQLite DB — no api_key needed here.
+    aggregator_category: Optional[str] = None  # target key pool (e.g. "fast", "reasoning")
+    aggregator_rotate_every: int = 5            # requests per key before forced rotation
+
     # Synthesis backend + model — used for synthesise() during mdcore search.
     # Defaults to primary backend + synthesise_model if not set.
     # Set synthesise_backend to use a completely different provider for synthesis.
-    # Example: backend=ollama (ingestion) + synthesise_backend=openai (synthesis)
+    # Example: backend=ollama (ingestion) + synthesise_backend=aggregator (synthesis)
     synthesise_backend: Optional[_LLMBackend] = None
     synthesise_model: Optional[str] = None
     synthesise_api_key: Optional[str] = None

@@ -14,7 +14,7 @@ from rich.syntax import Syntax
 from rich.table import Table
 from rich import box
 
-from mdcore.config.loader import load_config, DEFAULT_CONFIG_PATH
+from mdcore.config.loader import load_config, DEFAULT_CONFIG_PATH, DEFAULT_MODELS_PATH
 from mdcore.config.models import MdCoreConfig
 
 # ── mdcore init ───────────────────────────────────────────────────────────────
@@ -199,7 +199,7 @@ logging:
     out_path.write_text(config_text, encoding="utf-8")
 
 
-_VERSION = "1.3.1"
+_VERSION = "1.0.2"
 
 app = typer.Typer(
     name="mdcore",
@@ -210,6 +210,7 @@ console = Console()
 err_console = Console(stderr=True, style="bold red")
 
 _cfg_option = typer.Option(None, "--config", "-c", help="Path to config file")
+_models_option = typer.Option(None, "--models", "-m", help="Path to models.yaml (overrides llm + embeddings sections)")
 
 
 def _version_callback(value: bool) -> None:
@@ -229,8 +230,8 @@ def _main(
     pass
 
 
-def _load(config: Optional[str]) -> MdCoreConfig:
-    cfg = load_config(config)
+def _load(config: Optional[str], models: Optional[str] = None) -> MdCoreConfig:
+    cfg = load_config(config, models_path=models)
     from mdcore.utils.logging import setup_logging
     setup_logging(cfg.logging)
     return cfg
@@ -422,12 +423,13 @@ def init(
 @app.command()
 def index(
     config: Optional[str] = _cfg_option,
+    models: Optional[str] = _models_option,
     verbose: bool = typer.Option(False, "--verbose", "-v"),
     inspect: Optional[str] = typer.Option(None, "--inspect", help="Show chunk breakdown for a file"),
     force: bool = typer.Option(False, "--force", "-f", help="Wipe index and manifest, reindex everything from scratch"),
 ):
     """Scan vault, show diff, confirm, index delta."""
-    cfg = _load(config)
+    cfg = _load(config, models)
 
     from mdcore.core.indexer.vault_scanner import VaultScanner
     from mdcore.core.indexer.manifest_manager import ManifestManager
@@ -585,6 +587,7 @@ def _query_slug(topic: str) -> str:
 def search(
     topic: str = typer.Argument(..., help="Topic to search for"),
     config: Optional[str] = _cfg_option,
+    models: Optional[str] = _models_option,
     verbose: bool = typer.Option(False, "--verbose", "-v"),
     raw: bool = typer.Option(
         False, "--raw", "-r",
@@ -592,7 +595,7 @@ def search(
     ),
 ):
     """Flow A — retrieve context, synthesise with local LLM, write to MD file."""
-    cfg = _load(config)
+    cfg = _load(config, models)
 
     from mdcore.core.retriever.keyword_prefilter import KeywordPreFilter
     from mdcore.core.retriever.vector_searcher import VectorSearcher
@@ -701,9 +704,10 @@ def search(
 def ingest(
     file: Optional[str] = typer.Option(None, "--file", "-f", help="Path to summary file"),
     config: Optional[str] = _cfg_option,
+    models: Optional[str] = _models_option,
 ):
     """Flow B — accept session summary, classify, propose."""
-    cfg = _load(config)
+    cfg = _load(config, models)
 
     from mdcore.core.ingester.summary_receiver import SummaryReceiver
     from mdcore.core.ingester.summary_embedder import SummaryEmbedder
@@ -870,10 +874,11 @@ def _derive_filename(summary: str) -> str:
 @app.command(name="map")
 def vault_map_cmd(
     config: Optional[str] = _cfg_option,
+    models: Optional[str] = _models_option,
     repair: bool = typer.Option(False, "--repair", help="Remove descriptions for folders that no longer exist"),
 ):
     """Generate vault folder map file — open it, add descriptions, then run mdcore index."""
-    cfg = _load(config)
+    cfg = _load(config, models)
     from mdcore.core.vault_map import VaultMap
     vault_path = Path(cfg.vault.path).expanduser()
     vault_map = VaultMap(vault_path)
@@ -904,9 +909,9 @@ def vault_map_cmd(
 # ── mdcore status ─────────────────────────────────────────────────────────────
 
 @app.command()
-def status(config: Optional[str] = _cfg_option):
+def status(config: Optional[str] = _cfg_option, models: Optional[str] = _models_option):
     """Show index health, drift warnings, last sync."""
-    cfg = _load(config)
+    cfg = _load(config, models)
 
     from mdcore.core.indexer.vault_scanner import VaultScanner
     from mdcore.core.indexer.manifest_manager import ManifestManager
@@ -948,9 +953,10 @@ def status(config: Optional[str] = _cfg_option):
 def eval(
     topic: Optional[str] = typer.Argument(None, help="Topic to evaluate (runs a search if provided)"),
     config: Optional[str] = _cfg_option,
+    models: Optional[str] = _models_option,
 ):
     """Run user-guided quality check on retrieval output."""
-    cfg = _load(config)
+    cfg = _load(config, models)
 
     if topic:
         console.print(f"[bold]Running search for evaluation: '{topic}'[/bold]\n")
@@ -1007,6 +1013,7 @@ def eval(
 def deps(
     action: str = typer.Argument("status", help="Action: status | install"),
     config: Optional[str] = _cfg_option,
+    models: Optional[str] = _models_option,
 ):
     """Show or install backend dependencies based on current config.
 
@@ -1016,7 +1023,7 @@ def deps(
     """
     from mdcore.core.deps import required_backends, install_packages
 
-    cfg = _load(config)
+    cfg = _load(config, models)
     statuses = required_backends(cfg)
 
     if action == "status":

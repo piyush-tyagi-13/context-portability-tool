@@ -39,6 +39,9 @@ def _build_embeddings(cfg: EmbeddingsConfig) -> Embeddings:
     elif cfg.backend == "gemini":
         from langchain_google_genai import GoogleGenerativeAIEmbeddings
         return GoogleGenerativeAIEmbeddings(model=cfg.api_model, google_api_key=cfg.api_key)
+    elif cfg.backend == "aggregator":
+        from llm_aggregator import AggregatorEmbeddings
+        return AggregatorEmbeddings(category=cfg.aggregator_category)
     raise ValueError(f"Unknown embeddings backend: {cfg.backend}")
 
 
