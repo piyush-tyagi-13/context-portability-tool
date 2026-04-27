@@ -207,6 +207,7 @@ llm:
 {"  langsmith_project: " + (langsmith_project or "mdcore") if langsmith_key else "  # langsmith_project: mdcore"}
 
 manifest:
+  path: .mdcore-index/manifest.json
   drift_warning_threshold: 3
 
 cli:
@@ -220,7 +221,7 @@ logging:
     out_path.write_text(config_text, encoding="utf-8")
 
 
-_VERSION = "1.0.8"
+_VERSION = "1.0.9"
 
 app = typer.Typer(
     name="mdcore",

@@ -47,13 +47,17 @@ def load_config(
             lines.append(f"  [{loc}] {err['msg']}")
         raise SystemExit("\n".join(lines)) from exc
 
+    vault_root = Path(cfg.vault.path).expanduser()
+
     # Resolve relative vector_store.persist_path against vault root.
-    # Allows writing  persist_path: .mdcore-index/chroma_db  in config so the
-    # DB travels with the vault (e.g. Google Drive sync across machines).
     vs_path = cfg.vector_store.persist_path
     if vs_path and not Path(os.path.expandvars(vs_path)).expanduser().is_absolute():
-        vault_root = Path(cfg.vault.path).expanduser()
         cfg.vector_store.persist_path = str(vault_root / vs_path)
+
+    # Resolve relative manifest path against vault root.
+    m_path = cfg.manifest.path
+    if m_path and not Path(os.path.expandvars(m_path)).expanduser().is_absolute():
+        cfg.manifest.path = str(vault_root / m_path)
 
     return cfg
 
