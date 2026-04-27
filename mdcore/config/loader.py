@@ -39,13 +39,23 @@ def load_config(
             raw["embeddings"] = {**(raw.get("embeddings") or {}), **models_raw["embeddings"]}
 
     try:
-        return MdCoreConfig.model_validate(raw)
+        cfg = MdCoreConfig.model_validate(raw)
     except ValidationError as exc:
         lines = [f"Config validation failed ({path}):"]
         for err in exc.errors():
             loc = " -> ".join(str(s) for s in err["loc"])
             lines.append(f"  [{loc}] {err['msg']}")
         raise SystemExit("\n".join(lines)) from exc
+
+    # Resolve relative vector_store.persist_path against vault root.
+    # Allows writing  persist_path: .mdcore-index/chroma_db  in config so the
+    # DB travels with the vault (e.g. Google Drive sync across machines).
+    vs_path = cfg.vector_store.persist_path
+    if vs_path and not Path(os.path.expandvars(vs_path)).expanduser().is_absolute():
+        vault_root = Path(cfg.vault.path).expanduser()
+        cfg.vector_store.persist_path = str(vault_root / vs_path)
+
+    return cfg
 
 
 def expand_path(p: str) -> Path:
