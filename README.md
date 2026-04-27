@@ -8,6 +8,18 @@
 
 ---
 
+## Screenshots
+
+![mdcore home](assets/home.jpg)
+
+![mdcore search](assets/search.jpg)
+
+![mdcore index](assets/index_vault.jpg)
+
+![mdcore status](assets/status.jpg)
+
+---
+
 ## What It Does
 
 **Retrieval (`mdcore search`)** - Ask a question or give a topic. mdcore searches your vault semantically, stitches the most relevant chunks, and synthesises a coherent cited briefing. Output lands in `<vault>/mdcore-output/` - ready to copy into any LLM conversation.
