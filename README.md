@@ -1,89 +1,49 @@
-# mdcore - Markdown CORE AI
+# mdcore
 
-**Classification, Organisation, Retrieval & Entry for your personal markdown knowledge base**
+**Markdown CORE AI - Classification, Organisation, Retrieval & Entry**
 
-**Version:** 1.0.1 | **PyPI:** `markdowncore-ai` | **CLI:** `mdcore`
+`mdcore` is a local, LLM-agnostic knowledge base engine for anyone with a folder of markdown notes. It reads and writes your vault intelligently - retrieve context on demand, ingest new knowledge with automatic classification and routing, all from the terminal or a TUI.
+
+**PyPI:** `markdowncore-ai` | **CLI:** `mdcore` | **Version:** 1.0.1
 
 ---
 
 ## What It Does
 
-`mdcore` is a local, LLM-agnostic knowledge base engine for anyone with a folder of markdown notes. It does two things:
+**Retrieval (`mdcore search`)** - Ask a question or give a topic. mdcore searches your vault semantically, stitches the most relevant chunks, and synthesises a coherent cited briefing. Output lands in `<vault>/mdcore-output/` - ready to copy into any LLM conversation.
 
-**Flow A - Retrieval:** Given a topic, it retrieves relevant chunks from your vault, synthesises them into a coherent cited briefing, and writes the result to `<vault>/mdcore-output/`. Copy and paste into any LLM conversation as context. Zero calls to your subscription LLM.
+**Ingestion (`mdcore ingest`)** - Feed any document into mdcore - an LLM session summary, a research note, a strategy doc, an article. It classifies the content against your existing vault, routes it to the right folder, detects conflicts with existing notes, generates a proposal, and writes only after your explicit approval.
 
-**Flow B - Ingestion:** Given any document - an LLM session summary, a research note, an article, a strategy doc, or any new piece of knowledge - it classifies the content against your existing vault, decides whether to update an existing note or create a new one, routes it to the right folder, detects conflicts, generates a proposal, and only after your explicit approval writes the changes and reindexes automatically.
-
----
-
----
-
-## Documentation
-
-- **[Getting Started](docs/getting-started.md)** - installation, first index, first search, first ingest, daily workflow
-- **[Config Reference](docs/config-reference.md)** - every config field documented with defaults, valid values, and tuning guidance
-- **[Architecture](docs/architecture.md)** - component design and data flow
-- **[Retrieval & Eval Guide](docs/retrieval-and-eval-guide.md)** - symptom-to-fix guide for tuning retrieval quality
+Both flows work fully local with Ollama. No subscription LLM API calls. No always-on server.
 
 ---
 
 ## Installation
 
-### Any platform (uv - recommended)
-
 ```bash
+# Recommended
 uv tool install markdowncore-ai
-```
 
-### Any platform (pipx)
+# With TUI
+uv tool install "markdowncore-ai[gui]"
 
-```bash
+# pipx
 pipx install markdowncore-ai
 ```
 
-### Ollama models (for local inference)
+### Ollama models (local inference)
 
 ```bash
 ollama pull nomic-embed-text   # embeddings
-ollama pull qwen3.5:4b         # primary LLM - classification + proposals
-ollama pull phi4-mini          # synthesis - fast, non-thinking
+ollama pull qwen3.5:4b         # classification, routing, proposals
+ollama pull phi4-mini          # synthesis (fast, non-thinking)
 ```
 
-### After install
+### First run
 
 ```bash
-mdcore init           # interactive setup wizard
-mdcore deps install   # install any backend packages not yet present
-mdcore index          # index your vault
-```
-
----
-
-## Commands
-
-```bash
-mdcore init                           # Interactive setup wizard - create config
-mdcore index                          # Scan vault, show diff, confirm, index delta
-mdcore index --force                  # Wipe and reindex from scratch
-mdcore search <topic>                 # Synthesise briefing -> write to <vault>/mdcore-output/ (Flow A)
-mdcore search <topic> --raw           # Raw excerpts only - skip synthesis
-mdcore search <topic> --verbose       # Show chunk scores alongside results
-mdcore ingest                         # Paste any document - classify, route, propose (Flow B)
-mdcore ingest --file doc.md           # Ingest from a file (session summary, article, notes, etc.)
-mdcore map                            # Generate vault folder map for doc routing
-mdcore map --repair                   # Remove stale folder descriptions from map
-mdcore status                         # Show index health and drift warnings
-mdcore eval [topic]                   # Run quality evaluation checklist
-mdcore config                         # Open config file in editor
-mdcore config --validate              # Validate config and report errors
-mdcore gui                            # Launch TUI (requires [gui] extra)
-```
-
-### Multiple config profiles
-
-```bash
-mdcore search "istio auth" --config ~/.mdcore/config-technical.yaml
-mdcore search "career goals" --config ~/.mdcore/config-personal.yaml
+mdcore init     # interactive setup -> writes ~/.mdcore/config.yaml
+mdcore index    # scan and index your vault
 ```
 
 ---
@@ -91,152 +51,132 @@ mdcore search "career goals" --config ~/.mdcore/config-personal.yaml
 ## Quick Start
 
 ```bash
-# 1. Configure (interactive wizard)
-mdcore init
-# -> asks for vault path, owner name, LLM backend, models
-# -> detects Ollama + pulled models, gives hardware-appropriate suggestions
-# -> writes ~/.mdcore/config.yaml
-
-# 2. Index your vault
-mdcore index
-
-# 3. Retrieve context for an LLM conversation
+# Search your vault
 mdcore search "kubernetes ingress routing"
-# -> writes <vault>/mdcore-output/2026-04-26-kubernetes-ingress-routing.md
-# -> open file, copy contents -> paste into Claude/ChatGPT/Gemini
+# -> synthesised briefing written to <vault>/mdcore-output/
+# -> copy contents, paste into Claude / ChatGPT / Gemini
 
-# 4. Ingest any document into your vault
-mdcore ingest --file my-session-summary.md   # LLM session summary
-mdcore ingest --file oss-strategy.md         # standalone research doc
-mdcore ingest                                # paste content directly
-# -> mdcore classifies, routes to right folder, proposes changes -> approve
+# Ingest a document
+mdcore ingest --file my-session-summary.md
+# -> classifies, routes to right folder, proposes changes -> approve to write
+
+# Launch TUI
+mdcore gui
 ```
 
 ---
 
-## Architecture
+## Commands
 
-```
-YOUR MARKDOWN VAULT (any folder of .md files)
-        |
-        v
-   mdcore core
-   +----------+  +----------+  +------------+
-   | Indexer  |  |Retriever |  |  Ingester  |
-   +----------+  +----------+  +------------+
-   +----------+  +----------+  +------------+
-   |  Writer  |  |LLM Layer |  |VectorStore |
-   +----------+  +----------+  +------------+
-        |
-   (copy-paste by user)
-        |
-        v
-ANY SUBSCRIPTION LLM (Claude / ChatGPT / Gemini / Others)
+```bash
+mdcore init                        # Interactive setup wizard
+mdcore index                       # Delta index - scan, diff, confirm, index
+mdcore index --force               # Wipe everything and reindex from scratch
+mdcore search <topic>              # Retrieve + synthesise briefing (Flow A)
+mdcore search <topic> --raw        # Retrieve raw excerpts, skip synthesis
+mdcore search <topic> --verbose    # Show similarity scores
+mdcore ingest                      # Paste document - classify, route, propose (Flow B)
+mdcore ingest --file <path>        # Ingest from file
+mdcore map                         # Generate vault folder map for routing
+mdcore map --repair                # Remove stale folder entries
+mdcore gui                         # Launch TUI (requires [gui] extra)
+mdcore status                      # Index health, drift warnings
+mdcore eval [topic]                # Retrieval quality checklist
+mdcore config                      # Open config in editor
+mdcore config --validate           # Validate config
 ```
 
-mdcore never talks to your subscription LLM directly. It prepares context (Flow A) and processes output from it (Flow B). The user is always the bridge.
+### Multiple vaults / config profiles
+
+```bash
+mdcore search "istio auth"     --config ~/.mdcore/config-work.yaml
+mdcore search "career goals"   --config ~/.mdcore/config-personal.yaml
+```
+
+---
+
+## Backends
+
+mdcore supports local and API-backed models. Mix and match per use case.
+
+| Backend | LLM | Embeddings | Extra needed |
+|---|---|---|---|
+| Ollama (local) | any pulled model | `nomic-embed-text`, `bge-m3` | none |
+| Gemini | `gemini-2.5-flash-lite` | `models/gemini-embedding-001` | none (bundled) |
+| OpenAI | `gpt-4o-mini` | `text-embedding-3-small` | `[openai]` |
+| Anthropic | `claude-haiku-4-5` | use Ollama or OpenAI | `[anthropic]` |
+
+```bash
+uv tool install "markdowncore-ai[openai]"
+uv tool install "markdowncore-ai[anthropic]"
+uv tool install "markdowncore-ai[all]"    # every backend
+```
+
+### Hardware guidance
+
+| Hardware | LLM | Embeddings |
+|---|---|---|
+| Apple M2 16GB+ | `qwen3.5:4b` | `nomic-embed-text` |
+| i5 + RTX 4070 | `qwen3:8b` | `bge-m3` |
+| Low-end / no GPU | `gemini-2.5-flash-lite` or `gpt-4o-mini` | `models/gemini-embedding-001` |
+
+---
+
+## Configuration
+
+Config lives at `~/.mdcore/config.yaml`. Generated by `mdcore init`.
+
+| Section | Key fields | Purpose |
+|---|---|---|
+| `vault` | `path`, `owner_name` | Vault root, owner name for multi-person vaults |
+| `embeddings` | `backend`, `api_model` / `local_model`, `api_key` | Embedding model |
+| `llm` | `backend`, `model`, `api_key`, `synthesise_model` | Primary LLM + synthesis model |
+| `indexer` | `chunk_size`, `heading_aware_splitting` | Chunking strategy |
+| `retriever` | `top_k`, `similarity_threshold` | Retrieval tuning |
+| `ingester` | `similarity_threshold_high/low` | Classification thresholds |
+| `writer` | `append_position`, `backup` | Write behaviour + backups |
+
+See `config.yaml.example` for the full annotated reference.
 
 ---
 
 ## Where LLM Calls Happen
 
-Every call goes to your configured `llm.model` (or `synthesise_model` where noted). Token usage logged at INFO level to `~/.mdcore/logs/mdcore.log` after every call.
+### `mdcore search` (Flow A)
 
-### Flow A - `mdcore search <topic>`
+| Phase | LLM? | Notes |
+|---|---|---|
+| Keyword pre-filter | No | BM25 scoring |
+| Vector search | No | Embedding lookup |
+| Chunk assembly | No | Pure text |
+| **Synthesis** | **Yes** - `synthesise_model` | Skip with `--raw` for zero LLM calls |
 
-| Phase | LLM call? | Model used | Notes |
-|---|---|---|---|
-| Keyword pre-filter | No | - | BM25 scoring, no LLM |
-| Vector search | No | - | Embedding lookup only |
-| Chunk stitching + formatting | No | - | Pure text assembly |
-| **Synthesis** | **Yes** | `synthesise_model` | Reformats raw excerpts into a briefing. Skip with `--raw` |
+### `mdcore ingest` (Flow B)
 
-`mdcore search <topic> --raw` makes Flow A fully LLM-free.
+| Phase | LLM? | Condition |
+|---|---|---|
+| Embedding + search | No | Always |
+| **Classification** | **Conditional** - `llm.model` | Only in ambiguous similarity range (0.65-0.82) |
+| **Folder routing** | **Yes** - `llm.model` | NEW files only |
+| **Proposal** | **Yes** - `llm.model` | Always before write |
 
-### Flow B - `mdcore ingest`
-
-| Phase | LLM call? | Model used | Condition |
-|---|---|---|---|
-| Embedding + vector search | No | - | Always |
-| **Classification** | **Conditional** | `llm.model` | Only when similarity score is between `similarity_threshold_low` and `similarity_threshold_high` |
-| **Folder routing** | **Yes (NEW only)** | `llm.model` | When action=NEW, LLM picks target folder from semantic candidate list |
-| **Proposal generation** | **Yes** | `llm.model` | Always - generates human-readable summary before approval |
-
-### `mdcore map` / `mdcore index`
-
-No LLM calls.
+`mdcore map` and `mdcore index` make no LLM calls.
 
 ---
 
 ## Observability
 
-Token usage logged after every call:
+Token usage logged after every call to `~/.mdcore/logs/`:
 ```
 INFO llm - tokens [gemini-2.5-flash-lite] in=312 out=89 total=401
 ```
 
-Optional LangSmith tracing - add to `~/.mdcore/config.yaml`:
+LangSmith tracing (optional) - add to `~/.mdcore/config.yaml`:
 ```yaml
 llm:
   langsmith_api_key: <your-key>
   langsmith_project: mdcore
 ```
-Traces every LLM call at `smith.langchain.com` with full prompt, response, latency, and token counts.
-
----
-
-## Configuration Reference
-
-See `config.yaml.example` for the full annotated config. Key sections:
-
-| Section | Key fields | Purpose |
-|---|---|---|
-| `vault` | `path`, `owner_name` | Vault root path, owner identity for multi-person vaults |
-| `indexer` | `chunk_size`, `heading_levels` | Chunking strategy and quality filters |
-| `embeddings` | `backend`, `local_model` | Local (Ollama) or API-backed embeddings |
-| `retriever` | `top_k`, `similarity_threshold` | Candidate retrieval, assembly, signposting |
-| `ingester` | `similarity_threshold_high/low` | Classification thresholds, conflict detection |
-| `writer` | `append_position`, `backup` | Append position, frontmatter injection, backups |
-| `llm` | `model`, `synthesise_model` | Primary LLM (classify/propose) + synthesis model (search) |
-| `cli` | `theme`, `verbose` | Terminal UI behaviour |
-
----
-
-## Hardware Tiers
-
-| Hardware | LLM Model | Embedding Model |
-|---|---|---|
-| Apple M2 Air 16GB | `qwen3.5:4b` | `nomic-embed-text` |
-| i5 + RTX 4070 | `qwen3:8b` | `bge-m3` |
-| Low-end / no GPU | `gpt-4o-mini` / `claude-haiku-4-5` | `text-embedding-3-small` |
-
----
-
-## Project Structure
-
-```
-mdcore/
-+-- cli/commands.py              # Typer commands, Rich rendering
-+-- core/
-|   +-- indexer/                 # VaultScanner, ManifestManager, TextSplitter, ...
-|   +-- retriever/               # KeywordPreFilter, VectorSearcher, ChunkStitcher, ...
-|   +-- ingester/                # ClassificationEngine, ConflictDetector, FolderRouter, ...
-|   +-- writer/                  # BackupManager, FrontmatterInjector, FileWriter, ...
-+-- llm/llm_layer.py             # classify(), propose(), synthesise(), route_folder()
-+-- store/vector_store.py        # ChromaDB wrapper
-+-- config/                      # Pydantic models + YAML loader
-+-- utils/                       # Logging, file utilities
-```
-
----
-
-## What mdcore Is Not
-
-- Not a chatbot or RAG question-answering agent
-- Not an API wrapper around subscription LLMs
-- Not a note-taking application
-- Not an always-on background service
-- **Never writes anything without your explicit approval**
 
 ---
 
