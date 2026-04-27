@@ -55,6 +55,21 @@ class AppBanner(Static):
 
 # ── helpers ───────────────────────────────────────────────────────────────────
 
+def _backend_label(backend: str, model: str, aggregator_category: str | None) -> str:
+    if backend == "aggregator":
+        category = aggregator_category or "general_purpose"
+        try:
+            from llm_aggregator.key_store import KeyStore
+            keys = KeyStore().get_active_keys(category)
+            if keys:
+                entries = [f"{k['provider']}:{k['model'] or 'default'}" for k in keys]
+                return f"aggregator [{category}] - {', '.join(entries)}"
+        except ImportError:
+            pass
+        return f"aggregator [{category}]"
+    return model or "(default)"
+
+
 def _query_slug(topic: str) -> str:
     slug = topic.lower()
     slug = re.sub(r"[^a-z0-9\s-]", "", slug)
@@ -910,8 +925,8 @@ class MdCoreApp(App):
                 f"**Indexed files:** {indexed}",
                 f"**Total chunks:** {chunk_count}",
                 f"**Drift:** {drift_str}",
-                f"**LLM backend:** {cfg.llm.backend} / `{cfg.llm.model}`",
-                f"**Embeddings:** {cfg.embeddings.backend} / `{cfg.embeddings.api_model or cfg.embeddings.local_model}`",
+                f"**LLM backend:** {cfg.llm.backend} / `{_backend_label(cfg.llm.backend, cfg.llm.model, cfg.llm.aggregator_category)}`",
+                f"**Embeddings:** {cfg.embeddings.backend} / `{_backend_label(cfg.embeddings.backend, cfg.embeddings.api_model or cfg.embeddings.local_model, cfg.embeddings.aggregator_category)}`",
             ]
 
             self.call_from_thread(
