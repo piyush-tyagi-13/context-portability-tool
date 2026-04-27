@@ -63,10 +63,10 @@ def _backend_label(backend: str, model: str, aggregator_category: str | None) ->
             keys = KeyStore().get_active_keys(category)
             if keys:
                 entries = [f"{k['provider']}:{k['model'] or 'default'}" for k in keys]
-                return f"aggregator [{category}] - {', '.join(entries)}"
-        except ImportError:
+                return f"aggregator ({category}) - {', '.join(entries)}"
+        except Exception:
             pass
-        return f"aggregator [{category}]"
+        return f"aggregator ({category})"
     return model or "(default)"
 
 
