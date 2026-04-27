@@ -36,9 +36,6 @@ Both flows work fully local with Ollama. No subscription LLM API calls. No alway
 # Recommended - with TUI
 uv tool install "markdowncore-ai[gui]"
 
-# With aggregator backend (free-tier key pool, no paid API needed)
-uv tool install "markdowncore-ai[gui]" --with "llm-aggregator @ git+https://github.com/piyush-tyagi-13/llm-aggregator"
-
 # pipx
 pipx install markdowncore-ai
 ```
@@ -46,11 +43,8 @@ pipx install markdowncore-ai
 ### Upgrading
 
 ```bash
-# Upgrade mdcore only
+# Upgrade mdcore
 uv tool upgrade markdowncore-ai
-
-# Upgrade mdcore + llm-aggregator together
-uv tool install --force --refresh "markdowncore-ai[gui]" --with "llm-aggregator @ git+https://github.com/piyush-tyagi-13/llm-aggregator"
 ```
 
 ### Ollama models (local inference)
@@ -140,9 +134,28 @@ uv tool install "markdowncore-ai[all]"    # every backend
 
 `aggregator` routes calls through [llm-aggregator](https://github.com/piyush-tyagi-13/llm-aggregator) - a local SQLite-backed key pool that round-robins free-tier API keys with automatic 429 cooldown. No `api_key` needed in mdcore config.
 
-Included in the recommended install command above. Keys DB lives at `~/.llm-aggregator/keys.db`.
+**Install llm-aggregator separately** (required - it has its own CLI for managing keys):
 
-Register free-tier keys (get them from the linked consoles - all have free tiers):
+```bash
+# Install as standalone tool so its CLI is available system-wide
+uv tool install "llm-aggregator @ git+https://github.com/piyush-tyagi-13/llm-aggregator"
+
+# With Textual TUI
+uv tool install "llm-aggregator[gui] @ git+https://github.com/piyush-tyagi-13/llm-aggregator"
+
+# Also add it to mdcore's environment so mdcore can import it
+uv tool install --force "markdowncore-ai[gui]" --with "llm-aggregator @ git+https://github.com/piyush-tyagi-13/llm-aggregator"
+```
+
+Upgrading llm-aggregator:
+
+```bash
+uv tool install --force "llm-aggregator[gui] @ git+https://github.com/piyush-tyagi-13/llm-aggregator"
+# re-add --with to mdcore too
+uv tool install --force "markdowncore-ai[gui]" --with "llm-aggregator @ git+https://github.com/piyush-tyagi-13/llm-aggregator"
+```
+
+Keys DB lives at `~/.llm-aggregator/keys.db`. Register free-tier keys:
 
 ```bash
 # Groq - https://console.groq.com/keys
