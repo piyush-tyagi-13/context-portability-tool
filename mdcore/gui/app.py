@@ -458,7 +458,8 @@ class MdCoreApp(App):
         self._load_status()
 
     def on_tabbed_content_tab_activated(self, event) -> None:
-        if event.tab.id == "vault-map" and not self._vault_map_folders:
+        active = self.query_one(TabbedContent).active
+        if active == "vault-map" and not self._vault_map_folders:
             self._load_vault_map()
 
     # ── Search ────────────────────────────────────────────────────────────────
@@ -968,27 +969,26 @@ class MdCoreApp(App):
 
             self._vault_map_folders = folders
 
-            scroll = self.query_one("#vault-map-scroll")
-            # Remove placeholder or old rows
-            self.call_from_thread(scroll.remove_children)
+            def _rebuild_rows(folders=folders, descriptions=descriptions):
+                scroll = self.query_one("#vault-map-scroll")
+                # Remove placeholder/old rows synchronously from main thread
+                for child in list(scroll.children):
+                    child.remove()
+                for i, folder in enumerate(folders):
+                    desc = descriptions.get(folder, "")
+                    row = Horizontal(classes="map-row")
+                    label = Label(folder, classes="map-folder-label")
+                    inp = Input(
+                        value=desc,
+                        placeholder="Describe what belongs here...",
+                        id=f"map-input-{i}",
+                        classes="map-desc-input",
+                    )
+                    scroll.mount(row)
+                    row.mount(label)
+                    row.mount(inp)
 
-            for i, folder in enumerate(folders):
-                desc = descriptions.get(folder, "")
-                row = Horizontal(classes="map-row")
-                label = Label(folder, classes="map-folder-label")
-                inp = Input(
-                    value=desc,
-                    placeholder="Describe what belongs here...",
-                    id=f"map-input-{i}",
-                    classes="map-desc-input",
-                )
-
-                def _mount_row(r=row, l=label, inp=inp):
-                    r.mount(l)
-                    r.mount(inp)
-                    scroll.mount(r)
-
-                self.call_from_thread(_mount_row)
+            self.call_from_thread(_rebuild_rows)
 
             self.call_from_thread(
                 self.query_one("#vault-map-status", Static).update,
