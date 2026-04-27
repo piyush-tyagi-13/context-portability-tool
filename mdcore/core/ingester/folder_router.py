@@ -58,6 +58,15 @@ class FolderRouter:
             # Fallback — use full folder list
             candidate_folders = all_folders
             log.info("FolderRouter: falling back to full folder list (%d folders)", len(all_folders))
+        else:
+            # Always include vault-map-described folders even if they have no
+            # indexed content (empty folders only have their name as signal).
+            described = set(descriptions.keys()) if descriptions else set()
+            for f in described:
+                if f in all_folders and f not in candidate_folders:
+                    candidate_folders.append(f)
+            if described:
+                log.info("FolderRouter: candidates after map merge %s", candidate_folders)
 
         # Stage 2 — LLM picks from candidates
         result: FolderRoutingResult = self._llm.route_folder(document, candidate_folders, descriptions)

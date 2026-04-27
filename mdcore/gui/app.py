@@ -60,7 +60,11 @@ def _backend_label(backend: str, model: str, aggregator_category: str | None) ->
         category = aggregator_category or "general_purpose"
         try:
             from llm_aggregator.key_store import KeyStore
-            keys = KeyStore().get_active_keys(category)
+            store = KeyStore()
+            keys = store.get_active_keys(category)
+            if not keys:
+                # category mismatch - show all active keys as fallback
+                keys = [k for k in store.get_all_keys() if k["is_active"]]
             if keys:
                 entries = [f"{k['provider']}:{k['model'] or 'default'}" for k in keys]
                 return f"aggregator ({category}) - {', '.join(entries)}"
@@ -266,6 +270,52 @@ class MdCoreApp(App):
         display: block;
     }
 
+    /* ── Vault Map tab ── */
+    #vault-map-pane {
+        padding: 1 2;
+    }
+    #vault-map-buttons {
+        height: 3;
+        margin-bottom: 1;
+    }
+    #btn-rebuild-map {
+        width: 22;
+        margin-right: 1;
+    }
+    #btn-save-map {
+        width: 22;
+    }
+    #vault-map-loading {
+        height: 3;
+        display: none;
+    }
+    #vault-map-loading.visible {
+        display: block;
+    }
+    #vault-map-scroll {
+        border: round $primary;
+        height: 1fr;
+        padding: 1;
+    }
+    .map-row {
+        height: 3;
+        margin-bottom: 0;
+    }
+    .map-folder-label {
+        width: 36;
+        padding: 1 1 0 0;
+        color: $accent;
+        text-style: bold;
+    }
+    .map-desc-input {
+        width: 1fr;
+    }
+    #vault-map-status {
+        height: 1;
+        color: $success;
+        margin-top: 1;
+    }
+
     /* ── Confirm modal ── */
     ConfirmScreen {
         align: center middle;
@@ -318,6 +368,8 @@ class MdCoreApp(App):
         self._pending_proposal = None
         self._pending_summary = None
         self._pending_existing_content = None
+        # Vault map state - ordered list of folder paths matching input widget indices
+        self._vault_map_folders: list[str] = []
 
     def _load_cfg(self):
         if self._cfg is None:
@@ -390,10 +442,24 @@ class MdCoreApp(App):
                     yield Button("Refresh", id="btn-refresh-status")
                     yield LoadingIndicator(id="status-loading")
 
+            with TabPane("Vault Map", id="vault-map"):
+                with Vertical(id="vault-map-pane"):
+                    with Horizontal(id="vault-map-buttons"):
+                        yield Button("Rebuild Folders", id="btn-rebuild-map")
+                        yield Button("Save Descriptions", id="btn-save-map", variant="primary")
+                    yield LoadingIndicator(id="vault-map-loading")
+                    with ScrollableContainer(id="vault-map-scroll"):
+                        yield Static("Switch to this tab to load vault folders.", id="vault-map-placeholder")
+                    yield Static("", id="vault-map-status")
+
         yield Footer()
 
     def on_mount(self) -> None:
         self._load_status()
+
+    def on_tabbed_content_tab_activated(self, event) -> None:
+        if event.tab.id == "vault-map" and not self._vault_map_folders:
+            self._load_vault_map()
 
     # ── Search ────────────────────────────────────────────────────────────────
 
@@ -869,6 +935,110 @@ class MdCoreApp(App):
 
         except Exception as exc:
             self._log(f"[red]Error:[/red] {exc}")
+        finally:
+            self.call_from_thread(loading.remove_class, "visible")
+
+    # ── Vault Map ─────────────────────────────────────────────────────────────
+
+    @on(Button.Pressed, "#btn-rebuild-map")
+    def on_rebuild_map(self) -> None:
+        self._vault_map_folders = []
+        self._load_vault_map()
+
+    @on(Button.Pressed, "#btn-save-map")
+    def on_save_map(self) -> None:
+        self._save_vault_map()
+
+    @work(thread=True)
+    def _load_vault_map(self) -> None:
+        loading = self.query_one("#vault-map-loading")
+        self.call_from_thread(loading.add_class, "visible")
+
+        try:
+            cfg = self._load_cfg()
+            from mdcore.core.vault_map import VaultMap
+            from pathlib import Path
+
+            vault_path = Path(cfg.vault.path).expanduser()
+            vmap = VaultMap(vault_path)
+            # write_template picks up new folders and preserves existing descriptions
+            vmap.write_template()
+            folders = vmap.all_vault_folders()
+            descriptions = vmap.folder_descriptions()
+
+            self._vault_map_folders = folders
+
+            scroll = self.query_one("#vault-map-scroll")
+            # Remove placeholder or old rows
+            self.call_from_thread(scroll.remove_children)
+
+            for i, folder in enumerate(folders):
+                desc = descriptions.get(folder, "")
+                row = Horizontal(classes="map-row")
+                label = Label(folder, classes="map-folder-label")
+                inp = Input(
+                    value=desc,
+                    placeholder="Describe what belongs here...",
+                    id=f"map-input-{i}",
+                    classes="map-desc-input",
+                )
+
+                def _mount_row(r=row, l=label, inp=inp):
+                    r.mount(l)
+                    r.mount(inp)
+                    scroll.mount(r)
+
+                self.call_from_thread(_mount_row)
+
+            self.call_from_thread(
+                self.query_one("#vault-map-status", Static).update,
+                f"{len(folders)} folders loaded. Edit descriptions and click Save."
+            )
+
+        except Exception as exc:
+            self.call_from_thread(
+                self.query_one("#vault-map-status", Static).update,
+                f"[red]Error:[/red] {exc}"
+            )
+        finally:
+            self.call_from_thread(loading.remove_class, "visible")
+
+    @work(thread=True)
+    def _save_vault_map(self) -> None:
+        loading = self.query_one("#vault-map-loading")
+        self.call_from_thread(loading.add_class, "visible")
+
+        try:
+            cfg = self._load_cfg()
+            from mdcore.core.vault_map import VaultMap
+            from pathlib import Path
+
+            vault_path = Path(cfg.vault.path).expanduser()
+            vmap = VaultMap(vault_path)
+
+            def _collect_and_save():
+                for i, folder in enumerate(self._vault_map_folders):
+                    try:
+                        inp = self.query_one(f"#map-input-{i}", Input)
+                        desc = inp.value.strip()
+                        if desc:
+                            vmap.set_description(folder, desc)
+                        else:
+                            vmap.remove_description(folder)
+                    except Exception:
+                        pass
+                vmap.save()
+                self.query_one("#vault-map-status", Static).update(
+                    "[green]Saved.[/green] Run Index to apply changes to routing."
+                )
+
+            self.call_from_thread(_collect_and_save)
+
+        except Exception as exc:
+            self.call_from_thread(
+                self.query_one("#vault-map-status", Static).update,
+                f"[red]Save failed:[/red] {exc}"
+            )
         finally:
             self.call_from_thread(loading.remove_class, "visible")
 
