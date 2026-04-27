@@ -40,11 +40,27 @@ uv tool install "markdowncore-ai[gui]"
 pipx install markdowncore-ai
 ```
 
+### Using the aggregator backend (free-tier, no paid API)
+
+Install [llm-keypool](https://pypi.org/project/llm-keypool/) separately - it has its own CLI for managing keys:
+
+```bash
+# Install llm-keypool as standalone tool (gives llm-aggregator CLI)
+uv tool install "llm-keypool[gui]"
+
+# Also wire it into mdcore's environment so mdcore can import it
+uv tool install --force "markdowncore-ai[gui]" --with llm-keypool
+```
+
 ### Upgrading
 
 ```bash
 # Upgrade mdcore
 uv tool upgrade markdowncore-ai
+
+# Upgrade llm-keypool + rewire into mdcore
+uv tool upgrade llm-keypool
+uv tool install --force "markdowncore-ai[gui]" --with llm-keypool
 ```
 
 ### Ollama models (local inference)
