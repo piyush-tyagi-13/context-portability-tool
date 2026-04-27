@@ -2,7 +2,7 @@
 
 **Classification, Organisation, Retrieval & Entry for your personal markdown knowledge base**
 
-**Version:** 1.0.0 | **PyPI:** `markdowncore-ai` | **CLI:** `mdcore`
+**Version:** 1.0.1 | **PyPI:** `markdowncore-ai` | **CLI:** `mdcore`
 
 ---
 
@@ -76,6 +76,7 @@ mdcore status                         # Show index health and drift warnings
 mdcore eval [topic]                   # Run quality evaluation checklist
 mdcore config                         # Open config file in editor
 mdcore config --validate              # Validate config and report errors
+mdcore gui                            # Launch TUI (requires [gui] extra)
 ```
 
 ### Multiple config profiles
@@ -239,4 +240,4 @@ mdcore/
 
 ---
 
-*mdcore - Markdown CORE AI v1.0.0*
+*mdcore - Markdown CORE AI v1.0.1*

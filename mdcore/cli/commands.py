@@ -1133,3 +1133,16 @@ def config_cmd(
     import os
     editor = os.environ.get("EDITOR", "vi")
     subprocess.run([editor, str(config_path)])
+
+
+# ── mdcore gui ────────────────────────────────────────────────────────────────
+
+@app.command()
+def gui(config: Optional[str] = _cfg_option):
+    """Launch the mdcore TUI (experimental)."""
+    try:
+        from mdcore.gui.app import run
+    except ImportError:
+        console.print("[red]Textual not installed.[/red] Run: uv tool install markdowncore-ai --with textual --force")
+        raise typer.Exit(1)
+    run(config_path=config)

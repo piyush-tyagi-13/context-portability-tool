@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "markdowncore-ai"
-version = "1.0.0"
+version = "1.0.1"
 description = "Markdown CORE AI - Classification, Organisation, Retrieval & Entry for your personal markdown knowledge base"
 readme = "README.md"
 license = "MIT"
@@ -64,6 +64,9 @@ all = [
     "langchain-google-genai>=2",
     "langchain-huggingface>=0.1",
     "sentence-transformers>=3",
+]
+gui = [
+    "textual>=0.80",
 ]
 dev = [
     "build>=1.0",
