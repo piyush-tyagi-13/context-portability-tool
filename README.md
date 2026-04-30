@@ -45,7 +45,7 @@ pipx install markdowncore-ai
 Install [llm-keypool](https://pypi.org/project/llm-keypool/) separately - it has its own CLI for managing keys:
 
 ```bash
-# Install llm-keypool as standalone tool (gives llm-aggregator CLI)
+# Install llm-keypool as standalone tool (gives llm-keypool CLI)
 uv tool install "llm-keypool[gui]"
 
 # Also wire it into mdcore's environment so mdcore can import it
@@ -148,9 +148,11 @@ uv tool install "markdowncore-ai[all]"    # every backend
 
 ### Aggregator backend
 
-`aggregator` routes calls through [llm-aggregator](https://github.com/piyush-tyagi-13/llm-aggregator) - a local SQLite-backed key pool that round-robins free-tier API keys with automatic 429 cooldown. No `api_key` needed in mdcore config.
+`aggregator` routes calls through [llm-keypool](https://github.com/piyush-tyagi-13/llm-keypool) - a local SQLite-backed key pool that round-robins free-tier API keys with automatic 429 cooldown. No `api_key` needed in mdcore config.
 
-**Install llm-aggregator separately** (required - it has its own CLI for managing keys):
+> Note: `aggregator` is for LLM calls only. Embeddings require a dedicated backend (ollama, openai, or gemini) - embedding models cannot be swapped mid-index.
+
+**Install llm-keypool separately** (required - it has its own CLI for managing keys):
 
 ```bash
 # Install as standalone tool so its CLI is available system-wide
@@ -167,23 +169,23 @@ uv tool upgrade llm-keypool
 uv tool install --force "markdowncore-ai[gui]" --with llm-keypool
 ```
 
-Keys DB lives at `~/.llm-aggregator/keys.db`. Register free-tier keys:
+Keys DB lives at `~/.llm-keypool/keys.db`. Register free-tier keys:
 
 ```bash
 # Groq - https://console.groq.com/keys
-llm-aggregator add groq <KEY> --model llama-3.3-70b-versatile --category general_purpose
+llm-keypool add --provider groq --key <KEY> --model llama-3.3-70b-versatile --category general_purpose
 
 # Cerebras - https://cloud.cerebras.ai
-llm-aggregator add cerebras <KEY> --model llama-3.3-70b --category general_purpose
+llm-keypool add --provider cerebras --key <KEY> --model llama-3.3-70b --category general_purpose
 
 # Mistral - https://console.mistral.ai/api-keys
-llm-aggregator add mistral <KEY> --model mistral-small-latest --category general_purpose
+llm-keypool add --provider mistral --key <KEY> --model mistral-small-latest --category general_purpose
 
 # OpenRouter - https://openrouter.ai/settings/keys
-llm-aggregator add openrouter <KEY> --model meta-llama/llama-3.3-70b-instruct:free --category general_purpose
+llm-keypool add --provider openrouter --key <KEY> --model meta-llama/llama-3.3-70b-instruct:free --category general_purpose
 
 # Check registered keys
-llm-aggregator status
+llm-keypool status
 ```
 
 ```yaml
@@ -193,8 +195,8 @@ llm:
   aggregator_rotate_every: 5
 
 embeddings:
-  backend: aggregator
-  aggregator_category: general_purpose
+  backend: ollama        # aggregator not supported for embeddings
+  local_model: nomic-embed-text
 ```
 
 ### Hardware guidance

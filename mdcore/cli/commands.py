@@ -221,7 +221,7 @@ logging:
     out_path.write_text(config_text, encoding="utf-8")
 
 
-_VERSION = "1.0.9"
+_VERSION = "1.0.10"
 
 app = typer.Typer(
     name="mdcore",
@@ -326,7 +326,7 @@ def init(
         "2": ("openai",      "OpenAI API (gpt-4o-mini recommended)"),
         "3": ("anthropic",   "Anthropic API (claude-haiku-4-5 recommended)"),
         "4": ("gemini",      "Google Gemini API"),
-        "5": ("aggregator",  "llm-aggregator — free-tier key pool, no single API key needed"),
+        "5": ("aggregator",  "llm-keypool — free-tier key pool, no single API key needed"),
     }
     for k, (name, desc) in backend_options.items():
         tag = " [green][suggested][/green]" if (k == "1" and ollama_available) or (k == "2" and not ollama_available) else ""
@@ -368,13 +368,13 @@ def init(
             embed_api_key_for_agg = typer.prompt(f"{embed_backend} API key for embeddings", default="", hide_input=True)
             api_key = embed_api_key_for_agg
         from pathlib import Path as _Path
-        _agg_db = _Path.home() / ".llm-aggregator" / "keys.db"
-        console.rule("[bold cyan]Register API keys with llm-aggregator", align="left")
+        _agg_db = _Path.home() / ".llm-keypool" / "keys.db"
+        console.rule("[bold cyan]Register API keys with llm-keypool", align="left")
         console.print("[bold]Suggested free-tier providers and models:[/bold]")
-        console.print("  [cyan]Groq[/cyan]       llm-aggregator add groq <KEY> --model llama-3.3-70b-versatile --category general_purpose")
-        console.print("  [cyan]Cerebras[/cyan]   llm-aggregator add cerebras <KEY> --model llama-3.3-70b --category general_purpose")
-        console.print("  [cyan]Mistral[/cyan]    llm-aggregator add mistral <KEY> --model mistral-small-latest --category general_purpose")
-        console.print("  [cyan]OpenRouter[/cyan] llm-aggregator add openrouter <KEY> --model meta-llama/llama-3.3-70b-instruct:free --category general_purpose")
+        console.print("  [cyan]Groq[/cyan]       llm-keypool add --provider groq --key <KEY> --model llama-3.3-70b-versatile --category general_purpose")
+        console.print("  [cyan]Cerebras[/cyan]   llm-keypool add --provider cerebras --key <KEY> --model llama-3.3-70b --category general_purpose")
+        console.print("  [cyan]Mistral[/cyan]    llm-keypool add --provider mistral --key <KEY> --model mistral-small-latest --category general_purpose")
+        console.print("  [cyan]OpenRouter[/cyan] llm-keypool add --provider openrouter --key <KEY> --model meta-llama/llama-3.3-70b-instruct:free --category general_purpose")
         console.print("\n  Get keys (all free tier):")
         console.print("  [dim]Groq:[/dim]       https://console.groq.com/keys")
         console.print("  [dim]Cerebras:[/dim]   https://cloud.cerebras.ai")
@@ -382,8 +382,8 @@ def init(
         console.print("  [dim]OpenRouter:[/dim] https://openrouter.ai/settings/keys")
         console.print(f"\n[bold]Config file locations:[/bold]")
         console.print(f"  mdcore config:         [cyan]{config_path}[/cyan]")
-        console.print(f"  llm-aggregator keys DB: [cyan]{_agg_db}[/cyan]  (managed via llm-aggregator CLI)")
-        console.print(f"  View registered keys:   [dim]llm-aggregator status[/dim]")
+        console.print(f"  llm-keypool keys DB: [cyan]{_agg_db}[/cyan]  (managed via llm-keypool CLI)")
+        console.print(f"  View registered keys:   [dim]llm-keypool status[/dim]")
         register_now = typer.confirm("\nRegister keys now? (open a new terminal tab, run the commands above, come back)", default=False)
         if register_now:
             typer.prompt("Press Enter when done registering keys", default="")

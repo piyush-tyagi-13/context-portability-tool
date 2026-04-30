@@ -59,7 +59,7 @@ def _backend_label(backend: str, model: str, aggregator_category: str | None) ->
     if backend == "aggregator":
         category = aggregator_category or "general_purpose"
         try:
-            from llm_aggregator.key_store import KeyStore
+            from llm_keypool.key_store import KeyStore
             store = KeyStore()
             keys = store.get_active_keys(category)
             if not keys:
@@ -1096,7 +1096,7 @@ class MdCoreApp(App):
                 f"**Total chunks:** {chunk_count}",
                 f"**Drift:** {drift_str}",
                 f"**LLM backend:** {cfg.llm.backend} / `{_backend_label(cfg.llm.backend, cfg.llm.model, cfg.llm.aggregator_category)}`",
-                f"**Embeddings:** {cfg.embeddings.backend} / `{_backend_label(cfg.embeddings.backend, cfg.embeddings.api_model or cfg.embeddings.local_model, cfg.embeddings.aggregator_category)}`",
+                f"**Embeddings:** {cfg.embeddings.backend} / `{_backend_label(cfg.embeddings.backend, cfg.embeddings.api_model or cfg.embeddings.local_model, None)}`",
             ]
 
             self.call_from_thread(

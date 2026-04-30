@@ -29,7 +29,7 @@ LLM_BACKEND_PACKAGES: dict[str, list[str]] = {
     "anthropic":   ["langchain-anthropic>=0.2"],
     "gemini":      ["langchain-google-genai>=2"],
     "huggingface": ["langchain-huggingface>=0.1", "sentence-transformers>=3"],
-    "aggregator":  ["git+https://github.com/piyush-tyagi-13/llm-aggregator"],
+    "aggregator":  ["llm-keypool"],
 }
 
 EMBEDDING_BACKEND_PACKAGES: dict[str, list[str]] = {
@@ -37,7 +37,6 @@ EMBEDDING_BACKEND_PACKAGES: dict[str, list[str]] = {
     "openai":      ["langchain-openai>=0.2"],
     "huggingface": ["langchain-huggingface>=0.1", "sentence-transformers>=3"],
     "gemini":      ["langchain-google-genai>=2"],
-    "aggregator":  ["git+https://github.com/piyush-tyagi-13/llm-aggregator"],
 }
 
 # Import probe: one representative module per backend.
@@ -48,7 +47,7 @@ LLM_BACKEND_PROBE: dict[str, str] = {
     "anthropic":   "langchain_anthropic",
     "gemini":      "langchain_google_genai",
     "huggingface": "langchain_huggingface",
-    "aggregator":  "llm_aggregator",
+    "aggregator":  "llm_keypool",
 }
 
 EMBEDDING_BACKEND_PROBE: dict[str, str] = {
@@ -56,7 +55,6 @@ EMBEDDING_BACKEND_PROBE: dict[str, str] = {
     "openai":      "langchain_openai",
     "huggingface": "sentence_transformers",
     "gemini":      "langchain_google_genai",
-    "aggregator":  "llm_aggregator",
 }
 
 

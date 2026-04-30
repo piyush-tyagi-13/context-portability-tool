@@ -22,7 +22,7 @@ _MAX_EMBED_CHARS = 6_000
 def _truncate(text: str) -> str:
     if len(text) <= _MAX_EMBED_CHARS:
         return text
-    log.warning("Chunk truncated for embedding (%d → %d chars)", len(text), _MAX_EMBED_CHARS)
+    log.warning("Chunk truncated for embedding (%d -> %d chars)", len(text), _MAX_EMBED_CHARS)
     return text[:_MAX_EMBED_CHARS]
 
 
@@ -40,8 +40,11 @@ def _build_embeddings(cfg: EmbeddingsConfig) -> Embeddings:
         from langchain_google_genai import GoogleGenerativeAIEmbeddings
         return GoogleGenerativeAIEmbeddings(model=cfg.api_model, google_api_key=cfg.api_key)
     elif cfg.backend == "aggregator":
-        from llm_aggregator import AggregatorEmbeddings
-        return AggregatorEmbeddings(category=cfg.aggregator_category)
+        raise ValueError(
+            "aggregator backend does not support embeddings - "
+            "embedding models cannot be swapped mid-index. "
+            "Use ollama, openai, or gemini for embeddings."
+        )
     raise ValueError(f"Unknown embeddings backend: {cfg.backend}")
 
 
