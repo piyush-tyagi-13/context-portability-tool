@@ -93,3 +93,9 @@ include = ["mdcore*"]
 
 [tool.setuptools.package-data]
 "mdcore.docs" = ["*.md"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]

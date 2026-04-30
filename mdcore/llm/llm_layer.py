@@ -129,7 +129,7 @@ def _build_llm(backend: str, model: str, api_key: Optional[str], cfg: LLMConfig)
         case "aggregator":
             from llm_keypool import AggregatorChat
             return AggregatorChat(
-                category=cfg.aggregator_category,
+                category=cfg.aggregator_category or "general_purpose",
                 rotate_every=cfg.aggregator_rotate_every,
             )
         case _:
