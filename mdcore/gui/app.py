@@ -247,21 +247,14 @@ class MdCoreApp(App):
     #status-pane {
         padding: 1 2;
     }
-    #status-grid {
+    #status-scroll {
         height: 1fr;
         margin-bottom: 1;
+        border: round $primary-darken-2;
+        padding: 0 1;
     }
-    .status-row {
-        height: 1;
-        margin-bottom: 0;
-    }
-    .status-key {
-        width: 24;
-        color: $text-muted;
-    }
-    .status-val {
-        width: 1fr;
-        color: $text;
+    #status-content {
+        height: auto;
     }
     #btn-refresh-status {
         width: 16;
@@ -442,8 +435,8 @@ class MdCoreApp(App):
 
             with TabPane("Status", id="status"):
                 with Vertical(id="status-pane"):
-                    with ScrollableContainer(id="status-grid"):
-                        yield Markdown("*Loading status...*", id="status-content")
+                    with ScrollableContainer(id="status-scroll"):
+                        yield Static("", id="status-content")
                     yield Button("Refresh", id="btn-refresh-status")
                     yield LoadingIndicator(id="status-loading")
 
@@ -1059,6 +1052,11 @@ class MdCoreApp(App):
         self.call_from_thread(loading.add_class, "visible")
 
         try:
+            from rich.table import Table
+            from rich.text import Text
+            from rich.console import Group
+            from rich.rule import Rule
+            from rich.padding import Padding
             from mdcore.core.indexer.manifest_manager import ManifestManager
             from mdcore.core.indexer.vault_scanner import VaultScanner
 
@@ -1066,8 +1064,6 @@ class MdCoreApp(App):
             manifest = ManifestManager(cfg.manifest, cfg.vault)
             store = self._get_store()
 
-            # Use VaultScanner so eligible count matches what Index tab uses
-            # (applies word count + structure signal filters, same exclusions)
             scanner = VaultScanner(cfg.vault, cfg.indexer)
             eligible_files = scanner.scan()
             eligible = len(eligible_files)
@@ -1080,34 +1076,101 @@ class MdCoreApp(App):
 
             try:
                 drift = manifest.drift_count(eligible_files)
-                drift_str = f"{drift} files changed" if drift > 0 else "Up to date"
+                drift_color = "yellow" if drift > 0 else "green"
+                drift_str = f"[{drift_color}]{drift} files changed[/{drift_color}]" if drift > 0 else "[green]Up to date[/green]"
             except Exception:
-                drift_str = "Unknown"
+                drift_str = "[dim]Unknown[/dim]"
+
+            index_pct = int(indexed / eligible * 100) if eligible else 100
+            health_color = "green" if drift == 0 else "yellow"
+
+            def _kv(key: str, val: str) -> Text:
+                t = Text()
+                t.append(f"  {key:<22}", style="dim cyan")
+                t.append(val)
+                return t
 
             llm_label = _backend_label(cfg.llm.backend, cfg.llm.model, cfg.llm.aggregator_category)
-            lines = [
-                f"**Vault path:** `{cfg.vault.path}`",
-                f"**Owner:** {cfg.vault.owner_name or '(not set)'}",
-                f"**Eligible files:** {eligible}",
-                f"**Indexed files:** {indexed}",
-                f"**Total chunks:** {chunk_count}",
-                f"**Drift:** {drift_str}",
-                f"**LLM backend:** {cfg.llm.backend} / `{llm_label}`",
-                f"**Embeddings:** {cfg.embeddings.backend} / `{_backend_label(cfg.embeddings.backend, cfg.embeddings.api_model or cfg.embeddings.local_model, None)}`",
+            emb_label = _backend_label(
+                cfg.embeddings.backend,
+                cfg.embeddings.api_model or cfg.embeddings.local_model,
+                None,
+            )
+
+            # ── vault section ──────────────────────────────────────────────
+            vault_rule = Rule("[bold cyan]  Vault[/bold cyan]", style="cyan", align="left")
+            vault_path_short = cfg.vault.path.replace(str(Path.home()), "~")
+            vault_lines = [
+                _kv("Path", f"[white]{vault_path_short}[/white]"),
+                _kv("Owner", f"[white]{cfg.vault.owner_name or '(not set)'}[/white]"),
             ]
+
+            # ── index health section ───────────────────────────────────────
+            index_rule = Rule("[bold cyan]  Index Health[/bold cyan]", style="cyan", align="left")
+            index_lines = [
+                _kv("Eligible files", f"[white]{eligible}[/white]"),
+                _kv("Indexed files",  f"[{health_color}]{indexed}[/{health_color}] [dim]({index_pct}%)[/dim]"),
+                _kv("Total chunks",   f"[white]{chunk_count}[/white]"),
+                _kv("Drift",          drift_str),
+            ]
+
+            # ── backends section ──────────────────────────────────────────
+            backend_rule = Rule("[bold cyan]  Backends[/bold cyan]", style="cyan", align="left")
+            backend_lines = [
+                _kv("LLM",        f"[white]{cfg.llm.backend}[/white] [dim]/[/dim] [cyan]{llm_label}[/cyan]"),
+                _kv("Embeddings", f"[white]{cfg.embeddings.backend}[/white] [dim]/[/dim] [cyan]{emb_label}[/cyan]"),
+            ]
+
+            renderables = [
+                Padding("", (1, 0, 0, 0)),
+                vault_rule, *vault_lines,
+                Padding("", (1, 0, 0, 0)),
+                index_rule, *index_lines,
+                Padding("", (1, 0, 0, 0)),
+                backend_rule, *backend_lines,
+            ]
+
+            # ── key pool section (aggregator only) ────────────────────────
             if cfg.llm.backend == "aggregator":
-                lines.append("\n**Key pool quota:**")
-                lines.extend(_aggregator_pool_lines(cfg.llm.aggregator_category or "general_purpose"))
+                pool_rule = Rule("[bold cyan]  Key Pool[/bold cyan]", style="cyan", align="left")
+                renderables.append(Padding("", (1, 0, 0, 0)))
+                renderables.append(pool_rule)
+                try:
+                    from llm_keypool import AggregatorChat
+                    k = AggregatorChat(
+                        category=cfg.llm.aggregator_category or "general_purpose"
+                    ).current_key()
+                    if k:
+                        cd = k.get("cooldown_until")
+                        cd_text = (
+                            Text(f"  cooldown until {cd[:19]}", style="yellow")
+                            if cd
+                            else Text("  available", style="green")
+                        )
+                        renderables += [
+                            _kv("Provider", f"[white]{k['provider']}[/white]"),
+                            _kv("Model",    f"[cyan]{k['model']}[/cyan]"),
+                            _kv("Slot",     f"[white]{k['cycle_position']}/{k['rotate_every']}[/white]"),
+                            _kv("Req today",  f"[white]{k['requests_today']}[/white]"),
+                            _kv("Tok today",  f"[white]{k['tokens_used_today']}[/white]"),
+                            cd_text,
+                        ]
+                    else:
+                        renderables.append(Text("  No keys registered", style="dim"))
+                except Exception as e:
+                    renderables.append(Text(f"  unavailable: {e}", style="dim red"))
+
+            renderables.append(Padding("", (1, 0, 0, 0)))
 
             self.call_from_thread(
-                self.query_one("#status-content", Markdown).update,
-                "\n\n".join(lines)
+                self.query_one("#status-content", Static).update,
+                Group(*renderables),
             )
 
         except Exception as exc:
             self.call_from_thread(
-                self.query_one("#status-content", Markdown).update,
-                f"**Error loading status:** {exc}"
+                self.query_one("#status-content", Static).update,
+                f"[red bold]Error loading status:[/red bold] {exc}",
             )
         finally:
             self.call_from_thread(loading.remove_class, "visible")
