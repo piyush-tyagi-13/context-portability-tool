@@ -289,4 +289,12 @@ llm:
 
 ---
 
+## Roadmap
+
+**OpenClaw integration** - expose mdcore as an [OpenClaw](https://github.com/openclaw/openclaw) AgentSkill so autonomous agents can call `vault_search`, `vault_ingest`, and `vault_status` directly. OpenClaw's local-first, cross-platform execution model aligns well with mdcore's offline-capable design - no cloud dependency on either side.
+
+**Hermes Agent delegate_task bridge** - wire mdcore search and ingest as callable tools inside [Hermes Agent](https://github.com/nousresearch/hermes-agent) (Nous Research). Hermes's `delegate_task` spawns isolated subagents with their own context windows - a natural fit for parallel multi-topic vault lookups without polluting the main agent's context. Target: mdcore registered as a Hermes tool, callable as `delegate_task(tool="mdcore_search", query="...")`.
+
+---
+
 *mdcore - Markdown CORE AI v1.0.4*
