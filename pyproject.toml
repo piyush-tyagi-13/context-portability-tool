@@ -67,7 +67,7 @@ all = [
     # llm-keypool not included here — install separately (has its own CLI)
 ]
 aggregator = [
-    "llm-keypool>=0.3.0",
+    "llm-keypool>=0.3.1",
 ]
 gui = [
     "textual>=0.80",
