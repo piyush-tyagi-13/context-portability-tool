@@ -248,7 +248,7 @@ class MdCoreApp(App):
         padding: 1 2;
     }
     #status-grid {
-        height: auto;
+        height: 1fr;
         margin-bottom: 1;
     }
     .status-row {
@@ -442,8 +442,8 @@ class MdCoreApp(App):
 
             with TabPane("Status", id="status"):
                 with Vertical(id="status-pane"):
-                    with Vertical(id="status-grid"):
-                        yield Label("Loading status...", id="status-content")
+                    with ScrollableContainer(id="status-grid"):
+                        yield Markdown("*Loading status...*", id="status-content")
                     yield Button("Refresh", id="btn-refresh-status")
                     yield LoadingIndicator(id="status-loading")
 
@@ -1060,25 +1060,16 @@ class MdCoreApp(App):
 
         try:
             from mdcore.core.indexer.manifest_manager import ManifestManager
+            from mdcore.core.indexer.vault_scanner import VaultScanner
 
             cfg = self._load_cfg()
             manifest = ManifestManager(cfg.manifest, cfg.vault)
             store = self._get_store()
 
-            vault_path = Path(cfg.vault.path).expanduser()
-
-            # Collect eligible markdown files
-            excluded_folders = set(cfg.vault.excluded_folders or [])
-            excluded_exts = set(cfg.vault.excluded_extensions or [])
-            eligible_files = [
-                f for f in vault_path.rglob("*")
-                if f.suffix not in excluded_exts
-                and f.suffix == ".md"
-                and "mdcore-output" not in f.parts
-                and ".mdcore-meta.yaml" != f.name
-                and not any(part in excluded_folders for part in f.parts)
-                and not any(part.startswith(".") for part in f.relative_to(vault_path).parts)
-            ]
+            # Use VaultScanner so eligible count matches what Index tab uses
+            # (applies word count + structure signal filters, same exclusions)
+            scanner = VaultScanner(cfg.vault, cfg.indexer)
+            eligible_files = scanner.scan()
             eligible = len(eligible_files)
             indexed = len(manifest._data)
 
@@ -1105,17 +1096,17 @@ class MdCoreApp(App):
                 f"**Embeddings:** {cfg.embeddings.backend} / `{_backend_label(cfg.embeddings.backend, cfg.embeddings.api_model or cfg.embeddings.local_model, None)}`",
             ]
             if cfg.llm.backend == "aggregator":
-                lines.append("**Key pool quota:**")
+                lines.append("\n**Key pool quota:**")
                 lines.extend(_aggregator_pool_lines(cfg.llm.aggregator_category or "general_purpose"))
 
             self.call_from_thread(
-                self.query_one("#status-content", Label).update,
-                "\n".join(lines)
+                self.query_one("#status-content", Markdown).update,
+                "\n\n".join(lines)
             )
 
         except Exception as exc:
             self.call_from_thread(
-                self.query_one("#status-content", Label).update,
+                self.query_one("#status-content", Markdown).update,
                 f"**Error loading status:** {exc}"
             )
         finally:
