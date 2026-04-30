@@ -1030,7 +1030,7 @@ def status(config: Optional[str] = _cfg_option, models: Optional[str] = _models_
     else:
         console.print("[green]Index is healthy.[/green]")
 
-    # ── llm-keypool quota (aggregator backend only) ───────────────────────────
+    # ── llm-keypool active key (aggregator backend only) ─────────────────────
     if cfg.llm.backend == "aggregator":
         try:
             from llm_keypool import AggregatorChat
@@ -1038,34 +1038,31 @@ def status(config: Optional[str] = _cfg_option, models: Optional[str] = _models_
                 category=cfg.llm.aggregator_category or "general_purpose",
                 rotate_every=cfg.llm.aggregator_rotate_every,
             )
-            pool = chat.pool_status()
-            if pool:
-                kt = Table(title="llm-keypool pool", box=box.SIMPLE_HEAVY)
-                kt.add_column("ID",  style="dim", width=4)
+            k = chat.current_key()
+            if k:
+                kt = Table(title="llm-keypool active key", box=box.SIMPLE_HEAVY)
                 kt.add_column("Provider",  style="cyan")
                 kt.add_column("Model")
+                kt.add_column("Slot", justify="right")
                 kt.add_column("Req today", justify="right")
-                kt.add_column("Tok today",  justify="right")
-                kt.add_column("Remaining",  justify="right")
-                kt.add_column("Status")
-                for k in pool:
-                    remaining = str(k["remaining_requests"]) if k.get("remaining_requests") is not None else "-"
-                    status_str = "[green]available[/green]" if k["is_available"] else f"[yellow]cooldown until {(k['cooldown_until'] or '')[:19]}[/yellow]"
-                    kt.add_row(
-                        str(k["key_id"]),
-                        k["provider"],
-                        k["model"],
-                        str(k["requests_today"]),
-                        str(k["tokens_used_today"]),
-                        remaining,
-                        status_str,
-                    )
+                kt.add_column("Tok today", justify="right")
+                kt.add_column("Cooldown")
+                cd = k.get("cooldown_until")
+                cd_str = f"[yellow]{cd[:19]}[/yellow]" if cd else "[green]none[/green]"
+                kt.add_row(
+                    k["provider"],
+                    k["model"],
+                    f"{k['cycle_position']}/{k['rotate_every']}",
+                    str(k["requests_today"]),
+                    str(k["tokens_used_today"]),
+                    cd_str,
+                )
                 console.print(kt)
             else:
-                console.print("[dim]llm-keypool: no keys registered for category "
+                console.print("[dim]llm-keypool: no keys available for category "
                               f"'{cfg.llm.aggregator_category or 'general_purpose'}'[/dim]")
         except Exception as e:
-            console.print(f"[dim]llm-keypool pool status unavailable: {e}[/dim]")
+            console.print(f"[dim]llm-keypool active key unavailable: {e}[/dim]")
 
 
 # ── mdcore eval ───────────────────────────────────────────────────────────────

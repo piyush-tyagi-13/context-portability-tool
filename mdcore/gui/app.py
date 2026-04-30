@@ -62,23 +62,21 @@ def _backend_label(backend: str, model: str, aggregator_category: str | None) ->
 
 
 def _aggregator_pool_lines(category: str) -> list[str]:
-    """Return per-key quota lines for TUI status panel."""
+    """Return active key quota line for TUI status panel."""
     try:
         from llm_keypool import AggregatorChat
-        pool = AggregatorChat(category=category).pool_status()
-        if not pool:
+        k = AggregatorChat(category=category).current_key()
+        if not k:
             return [f"  *(no keys registered for '{category}')*"]
-        lines = []
-        for k in pool:
-            avail = "available" if k["is_available"] else f"cooldown {(k['cooldown_until'] or '')[:19]}"
-            rem = f" rem={k['remaining_requests']}" if k.get("remaining_requests") is not None else ""
-            lines.append(
-                f"  [{k['key_id']}] **{k['provider']}** `{k['model']}` "
-                f"req={k['requests_today']} tok={k['tokens_used_today']}{rem} — {avail}"
-            )
-        return lines
+        cd = k.get("cooldown_until")
+        cd_str = f"cooldown until {cd[:19]}" if cd else "available"
+        return [
+            f"  **{k['provider']}** `{k['model']}` "
+            f"slot {k['cycle_position']}/{k['rotate_every']} "
+            f"req={k['requests_today']} tok={k['tokens_used_today']} - {cd_str}"
+        ]
     except Exception as e:
-        return [f"  *(pool status unavailable: {e})*"]
+        return [f"  *(key status unavailable: {e})*"]
 
 
 def _query_slug(topic: str) -> str:
