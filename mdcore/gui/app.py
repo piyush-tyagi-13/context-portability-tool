@@ -57,21 +57,28 @@ class AppBanner(Static):
 
 def _backend_label(backend: str, model: str, aggregator_category: str | None) -> str:
     if backend == "aggregator":
-        category = aggregator_category or "general_purpose"
-        try:
-            from llm_keypool.key_store import KeyStore
-            store = KeyStore()
-            keys = store.get_active_keys(category)
-            if not keys:
-                # category mismatch - show all active keys as fallback
-                keys = [k for k in store.get_all_keys() if k["is_active"]]
-            if keys:
-                entries = [f"{k['provider']}:{k['model'] or 'default'}" for k in keys]
-                return f"aggregator ({category}) - {', '.join(entries)}"
-        except Exception:
-            pass
-        return f"aggregator ({category})"
+        return f"aggregator ({aggregator_category or 'general_purpose'})"
     return model or "(default)"
+
+
+def _aggregator_pool_lines(category: str) -> list[str]:
+    """Return per-key quota lines for TUI status panel."""
+    try:
+        from llm_keypool import AggregatorChat
+        pool = AggregatorChat(category=category).pool_status()
+        if not pool:
+            return [f"  *(no keys registered for '{category}')*"]
+        lines = []
+        for k in pool:
+            avail = "available" if k["is_available"] else f"cooldown {(k['cooldown_until'] or '')[:19]}"
+            rem = f" rem={k['remaining_requests']}" if k.get("remaining_requests") is not None else ""
+            lines.append(
+                f"  [{k['key_id']}] **{k['provider']}** `{k['model']}` "
+                f"req={k['requests_today']} tok={k['tokens_used_today']}{rem} — {avail}"
+            )
+        return lines
+    except Exception as e:
+        return [f"  *(pool status unavailable: {e})*"]
 
 
 def _query_slug(topic: str) -> str:
@@ -1088,6 +1095,7 @@ class MdCoreApp(App):
             except Exception:
                 drift_str = "Unknown"
 
+            llm_label = _backend_label(cfg.llm.backend, cfg.llm.model, cfg.llm.aggregator_category)
             lines = [
                 f"**Vault path:** `{cfg.vault.path}`",
                 f"**Owner:** {cfg.vault.owner_name or '(not set)'}",
@@ -1095,9 +1103,12 @@ class MdCoreApp(App):
                 f"**Indexed files:** {indexed}",
                 f"**Total chunks:** {chunk_count}",
                 f"**Drift:** {drift_str}",
-                f"**LLM backend:** {cfg.llm.backend} / `{_backend_label(cfg.llm.backend, cfg.llm.model, cfg.llm.aggregator_category)}`",
+                f"**LLM backend:** {cfg.llm.backend} / `{llm_label}`",
                 f"**Embeddings:** {cfg.embeddings.backend} / `{_backend_label(cfg.embeddings.backend, cfg.embeddings.api_model or cfg.embeddings.local_model, None)}`",
             ]
+            if cfg.llm.backend == "aggregator":
+                lines.append("**Key pool quota:**")
+                lines.extend(_aggregator_pool_lines(cfg.llm.aggregator_category or "general_purpose"))
 
             self.call_from_thread(
                 self.query_one("#status-content", Label).update,
