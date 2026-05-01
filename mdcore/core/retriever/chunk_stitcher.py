@@ -94,5 +94,5 @@ def stitch(
             avg_similarity=avg_sim,
         ))
 
-    log.debug("ChunkStitcher: %s → %d passages", source_file, len(passages))
+    log.debug("ChunkStitcher: %s -> %d passages", source_file, len(passages))
     return passages
